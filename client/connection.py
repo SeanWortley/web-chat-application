@@ -2,7 +2,7 @@ import json
 from queue import Queue
 from threading import Thread
 
-class Connection():
+class Connection:
     def __init__(self, socket, client):
         self.client = client
         self.socket = socket
@@ -18,6 +18,7 @@ class Connection():
                     break
                 
                 message = json.loads(data.decode())
+                self.client.awaiting_response = False
                 self.client.protocol.handleIncoming(self, message)
         
             except Exception as e:

@@ -1,31 +1,46 @@
 from socket import *
 from connection import Connection
 from protocol import Protocol
+from terminal import Terminal
 #Hello
 
 class Client:
-    def __init__(self, host, port):
+    def __init__(self, host, port, interface):
         self.socket = socket(AF_INET, SOCK_STREAM)
         self.socket.connect((host, port))
+
+        self.username = None
+        self.authenticated = False
+        self.awaiting_response = False
+
+        self.interface = interface
+        self.interface.on_user_input = self.handle_user_input
+        self.interface.start()
 
         self.protocol = Protocol(self)
         self.connection = Connection(self.socket, self)
         self.connection.start()
 
-        self.username = None
-        self.authenticated = False
+    def initialise(self):
+        pass
 
-    def signIn(self):
-        choice = input("Would you like to sign-in to an existing account? (Yes/No) \n If you don't have one, enter 'no' to create one.\n")
-        if (choice.lower() == "yes") or (choice.lower() == "y"):
-            self.protocol.AUTH(self.connection)
-        else:
-            self.protocol.CREATE_ACCOUNT(self.connection)
-
+    def handle_user_input(self, input):
+        match input:
+            case "/login":
+                self.awaiting_response = True
+                self.protocol.AUTH(self.connection)
+            case "/register":
+                self.awaiting_response = True
+                self.protocol.CREATE_ACCOUNT(self.connection)
+            case "/logout":
+                self.awaiting_response = True
+                self.protocol.LOGOUT(self.connection)
+            case _:
+                pass
 
 def main():
-    client = Client("", 12000)
-    client.signIn()
+    interface = Terminal()
+    client = Client("", 12000, interface)
 
 if __name__ == "__main__":
     main()
