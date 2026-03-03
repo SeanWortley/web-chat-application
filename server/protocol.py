@@ -3,8 +3,8 @@ class Protocol:
         self.server = server
         self.handlers = {
             "AUTH": self.handle_AUTH,
-            "CREATE_ACCOUNT": self.handle_CREATE_ACCOUNT
-            
+            "CREATE_ACCOUNT": self.handle_CREATE_ACCOUNT,
+            "LOGOUT": self.handle_LOGOUT            
         }
 
     def handleIncoming(self, connection, clientMessage):
@@ -36,6 +36,12 @@ class Protocol:
         else:
             self.CREATE_ACCOUNT_FAIL(connection)
 
+    def handle_LOGOUT(self, connection, message):
+        username = connection.loggedInAs
+        connection.authenticated = True
+        connection.loggedInAs = None
+        self.LOGOUT_ACK(connection, username)
+
     def AUTH_OK(self, connection):
         welcome_message = f'Welcome back, {connection.loggedInAs}!'
 
@@ -65,6 +71,14 @@ class Protocol:
         connection.sendJson({
             "message_name": "CREATE_ACCOUNT_FAIL",
             "error_message": error_message
+        })
+
+    def LOGOUT_ACK(self, connection, username):
+        goodbye_message = f"Goodbye, {username}"
+
+        connection.sendJson({
+            "message_name": "LOGOUT_ACK",
+            "goodbye_message": goodbye_message
         })
 
     

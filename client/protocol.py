@@ -5,7 +5,8 @@ class Protocol:
         self.client = client
         self.handlers = {
             "AUTH_OK": self.handle_AUTH_OK,
-            "AUTH_FAIL": self.handle_AUTH_FAIL
+            "AUTH_FAIL": self.handle_AUTH_FAIL,
+            "LOGOUT_ACK": self.handle_LOGOUT_ACK,
         }
 
     def handleIncoming(self, connection, serverMessage):
@@ -31,6 +32,23 @@ class Protocol:
         else:
             self.Create_ACCOUNT(self, connection)
 
+
+    def handle_CREATE_ACCOUNT_OK(self, connection, message):
+        print(message["welcome_message"])
+
+    def handle_CREATE_ACCOUNT_FAIL(self, connection, message):
+        print(message["error_message"])
+        choice = input("Would you like to try again? (Yes/No)\n")
+        if (choice.lower() == "yes") or (choice.lower() == "y"):
+            self.CREATE_ACCOUNT(connection)
+        else:
+            connection.close()
+
+    def handle_LOGOUT_ACK(self, connection, message):
+        print(message["goodbye_message"])
+        self.client.authenticated = False
+        self.client.loggedInAs = None
+
     def AUTH(self, connection):
         username = input("Enter your username: ")
         hashed_pword = (sha256(input("Enter your password: ").encode())).hexdigest()
@@ -51,17 +69,8 @@ class Protocol:
             "hashed_password": hashed_pword
         })
 
-    def handle_CREATE_ACCOUNT_OK(self, connection, message):
-        print(message["welcome_message"])
+    def LOGOUT(self, connection):
+        connection.sendJson({
+            "message_name": "LOGOUT"
+        })
 
-    def handle_CREATE_ACCOUNT_FAIL(self, connection, message):
-        print(message["error_message"])
-        choice = input("Would you like to try again? (Yes/No)\n")
-        if (choice.lower() == "yes") or (choice.lower() == "y"):
-            self.CREATE_ACCOUNT(connection)
-        else:
-            connection.close()
-
-
-        
-    
