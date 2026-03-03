@@ -6,6 +6,8 @@ class Protocol:
         self.handlers = {
             "AUTH_OK": self.handle_AUTH_OK,
             "AUTH_FAIL": self.handle_AUTH_FAIL,
+            "CREATE_ACCOUNT_OK": self.handle_CREATE_ACCOUNT_OK,
+            "CREATE_ACCOUNT_FAIL": self.handle_CREATE_ACCOUNT_FAIL,
             "LOGOUT_ACK": self.handle_LOGOUT_ACK,
         }
 
@@ -34,10 +36,10 @@ class Protocol:
 
 
     def handle_CREATE_ACCOUNT_OK(self, connection, message):
-        print(message["welcome_message"])
+        print(message["data"]["welcome_message"])
 
     def handle_CREATE_ACCOUNT_FAIL(self, connection, message):
-        print(message["error_message"])
+        print(message["data"]["error_message"])
         choice = input("Would you like to try again? (Yes/No)\n")
         if (choice.lower() == "yes") or (choice.lower() == "y"):
             self.CREATE_ACCOUNT(connection)
@@ -45,9 +47,14 @@ class Protocol:
             connection.close()
 
     def handle_LOGOUT_ACK(self, connection, message):
-        print(message["goodbye_message"])
+        print(message["data"]["goodbye_message"])
         self.client.authenticated = False
         self.client.loggedInAs = None
+        choice = input("Would you like to log back in? (Yes/No)\n")
+        if (choice.lower() == "yes") or (choice.lower() == "y"):
+            self.AUTH(connection)
+        else:
+            pass # Does nothing and ends the session 
 
     def AUTH(self, connection):
         username = input("Enter your username: ")
@@ -55,8 +62,10 @@ class Protocol:
         
         connection.sendJson({
             "message_name": "AUTH",
-            "username": username,
-            "hashed_password": hashed_pword
+            "data": {
+                "username": username,
+                "hashed_password": hashed_pword
+            }
         })
 
     def CREATE_ACCOUNT(self, connection):
@@ -65,8 +74,10 @@ class Protocol:
 
         connection.sendJson({
             "message_name": "CREATE_ACCOUNT",
-            "username": username,
-            "hashed_password": hashed_pword
+            "data": {
+                "username": username,
+                "hashed_password": hashed_pword
+            }
         })
 
     def LOGOUT(self, connection):

@@ -16,8 +16,8 @@ class Protocol:
             print(f"Unknown message: {clientMessage["message_name"]}")
 
     def handle_AUTH(self, connection, message):
-        username = message["username"]
-        hashed_pword = message["hashed_password"]
+        username = message["data"]["username"]
+        hashed_pword = message["data"]["hashed_password"]
         if (username in self.server.userList) and hashed_pword == (self.server.userList[username]):
             connection.authenticated = True
             connection.loggedInAs = username
@@ -26,8 +26,8 @@ class Protocol:
             self.AUTH_FAIL(connection)
 
     def handle_CREATE_ACCOUNT(self, connection, message):
-        username = message["username"]
-        hashed_pword = message["hashed_password"]
+        username = message["data"]["username"]
+        hashed_pword = message["data"]["hashed_password"]
         if (username not in self.server.userList):
             self.server.userList[username] = hashed_pword
             connection.authenticated = True
@@ -47,14 +47,16 @@ class Protocol:
 
         connection.sendJson({
             "message_name": "AUTH_OK", 
-            "data": {"welcome_message": welcome_message}
+            "data": {
+                "welcome_message": welcome_message}
                 })
 
     def AUTH_FAIL(self, connection):
         error_message = "INCORRECT USERNAME OR PASSWORD"
         connection.sendJson({
             "message_name": "AUTH_FAIL",
-            "data": {"error_code": error_message}
+            "data": {
+                "error_code": error_message}
         })
 
     def CREATE_ACCOUNT_OK(self, connection):
@@ -62,7 +64,8 @@ class Protocol:
 
         connection.sendJson({
             "message_name": "CREATE_ACCOUNT_OK",
-            "data": {"welcome_message": welcome_message}
+            "data": {
+                "welcome_message": welcome_message}
         })
 
     def CREATE_ACCOUNT_FAIL(self, connection):
@@ -70,7 +73,9 @@ class Protocol:
 
         connection.sendJson({
             "message_name": "CREATE_ACCOUNT_FAIL",
-            "error_message": error_message
+            "data": {
+                "error_message": error_message
+            }
         })
 
     def LOGOUT_ACK(self, connection, username):
@@ -78,7 +83,9 @@ class Protocol:
 
         connection.sendJson({
             "message_name": "LOGOUT_ACK",
-            "goodbye_message": goodbye_message
+            "data": {
+                "goodbye_message": goodbye_message
+                }
         })
 
     

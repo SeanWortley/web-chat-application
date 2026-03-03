@@ -24,6 +24,7 @@ class Connection():
                 print(f"Connection error: {e}")
                 break
 
+
     def sendJson(self, outgoing):
         encoded = json.dumps(outgoing).encode()
         self.socket.send(encoded)
