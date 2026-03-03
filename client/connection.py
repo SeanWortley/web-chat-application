@@ -18,7 +18,7 @@ class Connection():
                     break
                 
                 message = json.loads(data.decode())
-                self.client.executeProtocol(message)
+                self.client.protocol.handleIncoming(self, message)
         
             except Exception as e:
                 print(f"Connection error: {e}")

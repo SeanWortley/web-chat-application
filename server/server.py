@@ -1,8 +1,6 @@
 from ast import main
 from socket import *
-import json
 from hashlib import sha256
-import time
 from connection import Connection
 from protocol import Protocol
 
