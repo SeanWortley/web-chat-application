@@ -4,10 +4,11 @@ from threading import Thread
 import json
 from hashlib import sha256
 import time
+from connection import Connection
 
 
 class Server:
-    userList = {"username": sha256("password".encode()).hexdigest()}
+    userList = {"username": sha256("password".encode()).hexdigest(), "admin": sha256("admin".encode()).hexdigest()}
 
     def __init__(self, host, port):
         self.socket = socket(AF_INET, SOCK_STREAM)
@@ -17,48 +18,43 @@ class Server:
 
     def listen(self):
         while True:
-            clientSocket, adress = self.socket.accept()
+            clientSocket, address = self.socket.accept()
 
-            client = {"socket": clientSocket, "authenticated": False}
-            Thread(target = self.handleClient, args = (client,)).start()
+            connection = Connection(clientSocket, self)
+            connection.start()
 
-    def handleClient(self, client):
-        while True:
-            clientMessage = json.loads(client["socket"].recv(1024).decode())
-            self.executeProtocol(client, clientMessage)
 
-    def executeProtocol(self, client, clientMessage):       
-        match clientMessage["message_name"]:
+    def executeProtocol(self, connection, message):       
+        match message["message_name"]:
             case "AUTH":
-                self.AUTH(client, clientMessage)
+                self.handle_AUTH(connection, message)
             case _:
                 print("ERROR")
 
-    def AUTH(self, client, clientMessage):
-        username = clientMessage["username"]
-        hashed_pword = clientMessage["hashed_password"]
+    def handle_AUTH(self, connection, message):
+        username = message["username"]
+        hashed_pword = message["hashed_password"]
         if (username in self.userList) and hashed_pword == (self.userList[username]):
-            client["loggedInAs"] = username
-            self.AUTH_OK(client)
+            connection.authenticated = True
+            connection.loggedInAs = username
+            self.AUTH_OK(connection)
         else:
-            self.AUTH_FAIL(client)
+            self.AUTH_FAIL(connection)
 
-    def AUTH_OK(self, client):
-        client["authenticated"] = True
-        welcome_message = f'Welcome back, {client["loggedInAs"]}!'
-        serverMessage = json.dumps({
+    def AUTH_OK(self, connection):
+        welcome_message = f'Welcome back, {connection.loggedInAs}!'
+
+        connection.sendJson({
             "message_name": "AUTH_OK", 
             "data": {"welcome_message": welcome_message}
                 })
-        client["socket"].send(serverMessage.encode())
 
-    def AUTH_FAIL(self, client):
+    def AUTH_FAIL(self, connection):
         error_code = "INCORRECT USERNAME OR PASSWORD"
-        serverMessage = json.dumps({
+        connection.sendJson({
             "message_name": "AUTH_FAIL",
             "data": {"error_code": error_code}
         })
-        client["socket"].send(serverMessage.encode())
 
 
 def main():

@@ -15,9 +15,9 @@ class Client:
     def executeProtocol(self, serverMessage):
         match serverMessage["message_name"]:
             case "AUTH_OK":
-                self.AUTH_OK(serverMessage)
+                self.handle_AUTH_OK(serverMessage)
             case "AUTH_FAIL":
-                self.AUTH_FAIL(serverMessage)
+                self.handle_AUTH_FAIL(serverMessage)
             case _:
                 print("ERROR, INVALID INCOMING MESSAGE")
 
@@ -31,11 +31,11 @@ class Client:
         serverMessage = json.loads(self.socket.recv(1024).decode())
         self.executeProtocol(serverMessage)
 
-    def AUTH_OK(self, serverMessage):
+    def handle_AUTH_OK(self, serverMessage):
         self.authenticated = True
         print(serverMessage["data"]["welcome_message"])
 
-    def AUTH_FAIL(self, serverMessage):
+    def handle_AUTH_FAIL(self, serverMessage):
         print(f"Failed to authenticate: {serverMessage["data"]["error_code"]}")
 
 
