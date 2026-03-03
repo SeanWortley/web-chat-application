@@ -16,49 +16,32 @@ class Protocol:
         handler = self.handlers.get(messageName)
         if handler:
             handler(connection, serverMessage)
+
         else: 
-            print(f"Unknown message: {serverMessage["message_name"]}")
+            self.client.interface.display(f"Unknown message: {serverMessage["message_name"]}")
+        self.client.interface.resume()
 
     def handle_AUTH_OK(self, connection, message):
         self.client.authenticated = True
         self.client.username = True
 
-        print(message["data"]["welcome_message"])
+        self.client.interface.display(message["data"]["welcome_message"])
     
     def handle_AUTH_FAIL(self, connection, message):
-        print(f"Failed to authenticate: {message["data"]["error_code"]}")
-
-        choice = input("Would you like to try again? (Yes/No)\n")
-        if (choice.lower() == "yes") or (choice.lower() == "y"):
-            self.AUTH(connection)
-        else:
-            self.Create_ACCOUNT(self, connection)
+        self.client.interface.display(f"Failed to authenticate: {message["data"]["error_code"]}")
 
     def handle_CREATE_ACCOUNT_OK(self, connection, message):
-        print(message["data"]["welcome_message"])
+        self.client.interface.display(message["data"]["welcome_message"])
 
     def handle_CREATE_ACCOUNT_FAIL(self, connection, message):
-        print(message["data"]["error_message"])
-        choice = input("Would you like to try again? (Yes/No)\n")
-        if (choice.lower() == "yes") or (choice.lower() == "y"):
-            self.CREATE_ACCOUNT(connection)
-        else:
-            connection.close()
+        self.client.interface.display(message["data"]["error_message"])
 
     def handle_LOGOUT_ACK(self, connection, message):
-        print(message["data"]["goodbye_message"])
+        self.client.interface.display(message["data"]["goodbye_message"])
         self.client.authenticated = False
         self.client.loggedInAs = None
-        choice = input("Would you like to log back in? (Yes/No)\n")
-        if (choice.lower() == "yes") or (choice.lower() == "y"):
-            self.AUTH(connection)
-        else:
-            pass # Does nothing and ends the session 
 
-    def AUTH(self, connection):
-        username = input("Enter your username: ")
-        hashed_pword = (sha256(input("Enter your password: ").encode())).hexdigest()
-        
+    def AUTH(self, connection, username, hashed_pword):
         connection.sendJson({
             "message_name": "AUTH",
             "data": {
@@ -67,10 +50,7 @@ class Protocol:
             }
         })
 
-    def CREATE_ACCOUNT(self, connection):
-        username = input("Enter your desired username: ")
-        hashed_pword = (sha256(input("Enter your desired password: ").encode())).hexdigest()
-
+    def CREATE_ACCOUNT(self, connection, username, hashed_pword):
         connection.sendJson({
             "message_name": "CREATE_ACCOUNT",
             "data": {

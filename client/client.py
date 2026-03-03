@@ -10,7 +10,6 @@ class Client:
 
         self.username = None
         self.authenticated = False
-        self.awaiting_response = False
 
         self.interface = interface
         self.interface.on_user_input = self.handle_user_input
@@ -24,15 +23,12 @@ class Client:
         pass
 
     def handle_user_input(self, input):
-        match input:
-            case "/login":
-                self.awaiting_response = True
-                self.protocol.AUTH(self.connection)
-            case "/register":
-                self.awaiting_response = True
-                self.protocol.CREATE_ACCOUNT(self.connection)
-            case "/logout":
-                self.awaiting_response = True
+        match input["message_name"]:
+            case "AUTH":
+                self.protocol.AUTH(self.connection, input["data"]["username"], input["data"]["hashed_password"])
+            case "CREATE_ACCOUNT":
+                self.protocol.CREATE_ACCOUNT(self.connection, input["data"]["username"], input["data"]["hashed_password"])
+            case "LOGOUT":
                 self.protocol.LOGOUT(self.connection)
             case _:
                 pass
