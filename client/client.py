@@ -1,16 +1,18 @@
 from socket import *
 from hashlib import sha256
 import json
+from connection import Connection
 
 class Client:
-    authenticated = False
-
     def __init__(self, host, port):
         self.socket = socket(AF_INET, SOCK_STREAM)
         self.socket.connect((host, port))
 
-    def run(self):
-        self.AUTH()
+        self.connection = Connection(self.socket, self)
+        self.connection.start()
+
+        self.username = None
+        self.authenticated = False
 
     def executeProtocol(self, serverMessage):
         match serverMessage["message_name"]:
@@ -41,7 +43,7 @@ class Client:
 
 def main():
     client = Client("", 12000)
-    client.run()
+    client.AUTH()
 
 if __name__ == "__main__":
     main()

@@ -1,6 +1,5 @@
 from ast import main
 from socket import *
-from threading import Thread
 import json
 from hashlib import sha256
 import time
