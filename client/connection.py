@@ -23,7 +23,7 @@ class Connection():
             except Exception as e:
                 print(f"Connection error: {e}")
                 break
-jdjdjdj
+
     def sendJson(self, outgoing):
         encoded = json.dumps(outgoing).encode()
         self.socket.send(encoded)
