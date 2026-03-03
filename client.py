@@ -1,4 +1,5 @@
 from socket import *
+from hashlib import sha256
 import json
 
 class Client:
@@ -22,20 +23,20 @@ class Client:
 
     def AUTH(self):
         self.username = input("Enter your username: ")
-        hashed_pword = hash(input("Enter your password: "))
+        hashed_pword = (sha256(input("Enter your password: ").encode())).hexdigest()
         
-        clientMessage = json.dumps({"username": self.username, "hashed_password": hashed_pword})
+        clientMessage = json.dumps({"message_name": "AUTH", "username": self.username, "hashed_password": hashed_pword})
         self.socket.send(clientMessage.encode())
 
-        serverMessage = json.loads(self.socket.recv(1024)).decode()
+        serverMessage = json.loads(self.socket.recv(1024).decode())
         self.executeProtocol(serverMessage)
 
-        def AUTH_OK(self, serverMessage):
-            self.authenticated = True
-            print(serverMessage["data"]["welcome_message"])
+    def AUTH_OK(self, serverMessage):
+        self.authenticated = True
+        print(serverMessage["data"]["welcome_message"])
 
-        def AUTH_FAIL(self, serverMessage):
-            print(f"Failed to authenticate: {serverMessage["data"]["error_code"]}")
+    def AUTH_FAIL(self, serverMessage):
+        print(f"Failed to authenticate: {serverMessage["data"]["error_code"]}")
 
 
 def main():

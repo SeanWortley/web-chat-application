@@ -2,14 +2,16 @@ from ast import main
 from socket import *
 from threading import Thread
 import json
+from hashlib import sha256
 import time
 
 
 class Server:
-    userList = {"username": hash("password")}
+    userList = {"username": sha256("password".encode()).hexdigest()}
 
     def __init__(self, host, port):
         self.socket = socket(AF_INET, SOCK_STREAM)
+        self.socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         self.socket.bind((host, port))
         self.socket.listen()
 
@@ -36,13 +38,14 @@ class Server:
         username = clientMessage["username"]
         hashed_pword = clientMessage["hashed_password"]
         if (username in self.userList) and hashed_pword == (self.userList[username]):
+            client["loggedInAs"] = username
             self.AUTH_OK(client)
         else:
             self.AUTH_FAIL(client)
 
     def AUTH_OK(self, client):
         client["authenticated"] = True
-        welcome_message = f'Welcome back, {client["username"]}!'
+        welcome_message = f'Welcome back, {client["loggedInAs"]}!'
         serverMessage = json.dumps({
             "message_name": "AUTH_OK", 
             "data": {"welcome_message": welcome_message}
