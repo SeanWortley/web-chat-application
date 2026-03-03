@@ -28,6 +28,8 @@ class Protocol:
         choice = input("Would you like to try again? (Yes/No)\n")
         if (choice.lower() == "yes") or (choice.lower() == "y"):
             self.AUTH(connection)
+        else:
+            self.Create_ACCOUNT(self, connection)
 
     def AUTH(self, connection):
         username = input("Enter your username: ")
@@ -49,11 +51,17 @@ class Protocol:
             "hashed_password": hashed_pword
         })
 
-    def handle_CREATE_ACCOUNT_FAIL(self, connection, message):
-        pass
+    def handle_CREATE_ACCOUNT_OK(self, connection, message):
+        print(message["welcome_message"])
 
     def handle_CREATE_ACCOUNT_FAIL(self, connection, message):
-        pass
+        print(message["error_message"])
+        choice = input("Would you like to try again? (Yes/No)\n")
+        if (choice.lower() == "yes") or (choice.lower() == "y"):
+            self.CREATE_ACCOUNT(connection)
+        else:
+            connection.close()
+
 
         
     
