@@ -49,7 +49,11 @@ class Protocol:
             "hashed_password": hashed_pword
         })
 
-    def handle_CREATE_ACCOUNT_FAIL():
+    def handle_CREATE_ACCOUNT_FAIL(self, connection, message):
         pass
+
+    def handle_CREATE_ACCOUNT_FAIL(self, connection, message):
+        pass
+
         
     

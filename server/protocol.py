@@ -45,10 +45,10 @@ class Protocol:
                 })
 
     def AUTH_FAIL(self, connection):
-        error_code = "INCORRECT USERNAME OR PASSWORD"
+        error_message = "INCORRECT USERNAME OR PASSWORD"
         connection.sendJson({
             "message_name": "AUTH_FAIL",
-            "data": {"error_code": error_code}
+            "data": {"error_code": error_message}
         })
 
     def CREATE_ACCOUNT_OK(self, connection):
@@ -60,8 +60,11 @@ class Protocol:
         })
 
     def CREATE_ACCOUNT_FAIL(self, connection):
+        error_message = "A user with that name already exists!"
+
         connection.sendJson({
-            "message_name": "CREATE_ACCOUNT_FAIL"
+            "message_name": "CREATE_ACCOUNT_FAIL",
+            "error_message": error_message
         })
 
     
