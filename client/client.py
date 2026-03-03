@@ -2,7 +2,6 @@ from socket import *
 from connection import Connection
 from protocol import Protocol
 from terminal import Terminal
-#Hello
 
 class Client:
     def __init__(self, host, port, interface):
