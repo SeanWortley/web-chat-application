@@ -52,7 +52,16 @@ class Protocol:
         })
 
     def CREATE_ACCOUNT_OK(self, connection):
-        pass
+        welcome_message = f"welcome new user, {connection.loggedInAs}!"
+
+        connection.sendJson({
+            "message_name": "CREATE_ACCOUNT_OK",
+            "data": {"welcome_message": welcome_message}
+        })
 
     def CREATE_ACCOUNT_FAIL(self, connection):
-        pass
+        connection.sendJson({
+            "message_name": "CREATE_ACCOUNT_FAIL"
+        })
+
+    
