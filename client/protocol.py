@@ -34,7 +34,6 @@ class Protocol:
         else:
             self.Create_ACCOUNT(self, connection)
 
-
     def handle_CREATE_ACCOUNT_OK(self, connection, message):
         print(message["data"]["welcome_message"])
 
