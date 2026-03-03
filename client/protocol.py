@@ -38,5 +38,15 @@ class Protocol:
             "username": username,
             "hashed_password": hashed_pword
         })
+
+    def CREATE_ACCOUNT(self, connection):
+        username = input("Enter your desired username: ")
+        hashed_pword = (sha256(input("Enter your desired password: ").encode())).hexdigest()
+
+        connection.sendJson({
+            "message_name": "CREATE_ACCOUNT",
+            "username": username,
+            "hashed_password": hashed_pword
+        })
         
     

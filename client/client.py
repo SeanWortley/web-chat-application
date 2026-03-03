@@ -14,10 +14,17 @@ class Client:
         self.username = None
         self.authenticated = False
 
+    def signIn(self):
+        choice = input("Would you like to sign-in to an existing account? (Yes/No) \n If you don't have one, enter 'no' to create one.\n")
+        if (choice.lower() == "yes") or (choice.lower() == "y"):
+            self.protocol.AUTH(self.connection)
+        else:
+            self.protocol.CREATE_ACCOUNT(self.connection)
+
 
 def main():
     client = Client("", 12000)
-    client.protocol.AUTH(client.connection)
+    client.signIn()
 
 if __name__ == "__main__":
     main()
