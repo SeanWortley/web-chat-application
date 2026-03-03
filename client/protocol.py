@@ -48,5 +48,8 @@ class Protocol:
             "username": username,
             "hashed_password": hashed_pword
         })
+
+    def handle_CREATE_ACCOUNT_FAIL():
+        pass
         
     
