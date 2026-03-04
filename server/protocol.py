@@ -24,7 +24,9 @@ class Protocol:
     def handle_AUTH(self, connection, message):
         username = message["data"]["username"]
         hashed_pword = message["data"]["hashed_password"]
-        if (username in self.server.userList) and hashed_pword == (self.server.userList[username]):
+
+        user = self.server.database.get_user(username)
+        if (user and hashed_pword == user["hashed_password"]):
             connection.authenticated = True
             connection.loggedInAs = username
             self.AUTH_OK(connection)
@@ -34,8 +36,10 @@ class Protocol:
     def handle_CREATE_ACCOUNT(self, connection, message):
         username = message["data"]["username"]
         hashed_pword = message["data"]["hashed_password"]
-        if (username not in self.server.userList):
-            self.server.userList[username] = hashed_pword
+
+        user = self.server.database.get_user(username)
+        if (not user):
+            self.server.database.create_user(username, hashed_pword)
             connection.authenticated = True
             connection.loggedInAs = username
             self.CREATE_ACCOUNT_OK(connection)
