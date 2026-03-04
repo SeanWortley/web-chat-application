@@ -9,7 +9,7 @@ class Terminal:
             "/login": self.login,
             "/register": self.register,
             "/logout": self.logout,
-            "2": self.create_group
+            "/close": self.close
         }
         self.on_user_input = None
         self.wait_event = Event()
@@ -25,8 +25,12 @@ class Terminal:
         while self.running:
             text = input("> ")
 
-            if text in self.commands:
-                command = self.commands.get(text)
+            if text == "/help":
+                self.displayHelp # Prevents the terminal for waiting for server resonse, when /help does not call the server
+
+            # Terminal waits for protocol.py handle_incoming to call resume() before continuing the input loop
+            elif text in self.commands:
+                command = self.commands.get(text) 
                 self.wait_event.clear()
                 command()
                 self.wait_event.wait()
