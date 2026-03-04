@@ -1,22 +1,25 @@
 from threading import Thread, Event
 from hashlib import sha256
+from menu import Menu
 
 class Terminal:
 
     def __init__(self):
+        self.menu = Menu(self)
         self.commands = {
             "/help": self.displayHelp,
             "/login": self.login,
             "/register": self.register,
             "/logout": self.logout,
+            "2": self.menu.create_group
         }
-
         self.on_user_input = None
         self.wait_event = Event()
 
     def start(self):
         print("Welcome to the terminal interface for our chat application!")
         print("To get started, type '/login', or '/help' for a list of commands.")
+        self.menu.show_logged_out_menu()
         Thread(target=self.input_loop).start()
 
     def input_loop(self):

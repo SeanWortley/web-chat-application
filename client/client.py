@@ -30,12 +30,14 @@ class Client:
                 self.protocol.CREATE_ACCOUNT(self.connection, input["data"]["username"], input["data"]["hashed_password"])
             case "LOGOUT":
                 self.protocol.LOGOUT(self.connection)
+            case "CREATE_GROUP":
+                self.protocol.CREATE_GROUP(self.connection, input["data"]["group_name"], input["data"]["members"] )
             case _:
                 pass
 
 def main():
     interface = Terminal()
-    client = Client("", 12000, interface)
+    client = Client("127.0.0.1", 12000, interface)
 
 if __name__ == "__main__":
     main()
