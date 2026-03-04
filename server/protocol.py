@@ -4,7 +4,9 @@ class Protocol:
         self.handlers = {
             "AUTH": self.handle_AUTH,
             "CREATE_ACCOUNT": self.handle_CREATE_ACCOUNT,
-            "LOGOUT": self.handle_LOGOUT            
+            "LOGOUT": self.handle_LOGOUT,  
+            "CREATE_GROUP": self.handle_CREATE_GROUP,
+            "CREATE_GROUP_ACK": self.handle_CREATE_GROUP_ACK      
         }
 
     def handleIncoming(self, connection, clientMessage):
@@ -67,6 +69,78 @@ class Protocol:
             "data": {
                 "welcome_message": welcome_message}
         })
+
+    def handle_CREATE_GROUP(self, connection, message):
+        group_name = message["data"]["group_name"]
+        members = message["data"]["members"]  
+        # Prevent duplicate group names
+        if group_name in self.server.groups:
+            self.CREATE_GROUP_FAIL(connection, "A group with that name already exists!")
+            return
+
+       # Validate members exist
+        valid_members = [m for m in members if m in self.server.userList]
+
+        if connection.loggedInAs not in valid_members:
+            valid_members.append(connection.loggedInAs)
+
+        self.server.groups[group_name] = valid_members
+
+        # Notify all members currently online
+        for username in valid_members:
+            member_conn = self.server.get_connection_by_username(username)
+            if member_conn:
+                member_conn.sendJson({
+                   "message_name": "CREATE_GROUP_ACK",
+                   "data": {
+                      "group_name": group_name,
+                      "members": valid_members,
+                      "message": f"You have been added to group '{group_name}'!"
+                }
+            })
+
+            print(f"Group '{group_name}' created with members: {valid_members}")
+    
+    def CREATE_GROUP_FAIL(self, connection, error_message):
+        connection.sendJson({
+        "message_name": "CREATE_GROUP_FAIL",
+        "data": {"error_message": error_message}
+    })
+
+    def handle_JOIN_GROUP(self, connection, message):
+        group_name = message["data"]["group_name"]
+        if group_name not in self.server.groups:
+            connection.sendJson({
+                "message_name": "JOIN_GROUP_FAIL",
+                "data": {"error": "Group does not exist."}
+            })
+            return
+
+        if connection.loggedInAs not in self.server.groups[group_name]:
+            self.server.groups[group_name].append(connection.loggedInAs)
+
+        connection.sendJson({
+            "message_name": "JOIN_GROUP_ACK",
+            "data": {"group_name": group_name}
+            })
+
+    def handle_LEAVE_GROUP(self, connection, message):
+        group_name = message["data"]["group_name"]
+        if group_name in self.server.groups and connection.loggedInAs in self.server.groups[group_name]:
+            self.server.groups[group_name].remove(connection.loggedInAs)
+            connection.sendJson({
+                "message_name": "LEAVE_GROUP_ACK",
+                "data": {"group_name": group_name}
+            })
+
+    def handle_CREATE_GROUP_ACK(self, message):
+        group_name = message["data"]["group_name"]
+        members = message["data"]["members"]
+
+        self.terminal.display(f"Group '{group_name}' created successfully!")
+        self.terminal.display(f"Members: {', '.join(members)}")
+
+        self.terminal.resume()
 
     def CREATE_ACCOUNT_FAIL(self, connection):
         error_message = "A user with that name already exists!"

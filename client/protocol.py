@@ -26,21 +26,30 @@ class Protocol:
         self.client.username = True
 
         self.client.interface.display(message["data"]["welcome_message"])
-    
+        self.client.interface.display("Login successful!")
+        self.client.interface.show_logged_in_menu()
+        self.client.interface.resume()
+
     def handle_AUTH_FAIL(self, connection, message):
         self.client.interface.display(f"Failed to authenticate: {message["data"]["error_code"]}")
+        self.client.interface.show_logged_out_menu()
+        self.client.interface.resume()
 
     def handle_CREATE_ACCOUNT_OK(self, connection, message):
         self.client.interface.display(message["data"]["welcome_message"])
+        self.client.interface.show_logged_in_menu()
+        self.client.interface.resume()
 
     def handle_CREATE_ACCOUNT_FAIL(self, connection, message):
         self.client.interface.display(message["data"]["error_message"])
+        self.client.interface.show_logged_out_menu()
+        self.client.interface.resume()
 
     def handle_LOGOUT_ACK(self, connection, message):
         self.client.interface.display(message["data"]["goodbye_message"])
         self.client.authenticated = False
         self.client.loggedInAs = None
-
+        # What happens after the logout
     def AUTH(self, connection, username, hashed_pword):
         connection.sendJson({
             "message_name": "AUTH",
@@ -56,6 +65,23 @@ class Protocol:
             "data": {
                 "username": username,
                 "hashed_password": hashed_pword
+            }
+        })
+
+    def CREATE_GROUP(self, connection, groupname, members):
+        connection.sendJson({
+            "message_name": "CREATE_GROUP",
+            "data": {
+                "group_name": groupname,
+                "members": members
+            }
+        })
+    def JOIN_GROUP(self, connection, username, groupname):
+        connection.sendJson({
+            "message_name": "JOIN_GROUP",
+            "data": {
+                "username": username,
+                "group_name": groupname
             }
         })
 
