@@ -4,6 +4,7 @@ from hashlib import sha256
 from connection import Connection
 from protocol import Protocol
 from database import Database
+import argparse
 
 
 class Server:
@@ -34,7 +35,15 @@ class Server:
         return None
 
 def main():
-    server = Server("127.0.0.1", 12000)
+    # Parse in arguements
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--host", type=str, default="127.0.0.1")
+    parser.add_argument("--port", type=int, default=12000)
+    parser.add_argument("--verbose", type=bool, default=False)
+    args = parser.parse_args()
+    print(args.host, args.port, args.verbose)
+
+    server = Server(args.host, args.port)
     server.listen()
 
 
