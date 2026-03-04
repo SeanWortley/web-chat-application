@@ -31,7 +31,7 @@ class Client:
             case "LOGOUT":
                 self.protocol.LOGOUT(self.connection)
             case "CREATE_GROUP":
-                self.protocol.CREATE_GROUP(self.connection, input["data"]["group_name"], input["data"]["members"] )
+                self.protocol.CREATE_GROUP(self.connection, input["data"]["group_name"])
             case _:
                 pass
 

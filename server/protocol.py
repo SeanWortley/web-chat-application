@@ -1,3 +1,6 @@
+from tabnanny import verbose
+
+
 class Protocol:
     def __init__(self, server):
         self.server = server
@@ -10,9 +13,6 @@ class Protocol:
             "JOIN_GROUP": self.handle_JOIN_GROUP,
         }
     
-        self.server.groups = {} #focused on the group, so what users are on which specific grp
-        self.server.user_groups = {} #focused on the user, and names the group each user is in
-
     def handleIncoming(self, connection, clientMessage):
         messageName = clientMessage["message_name"]
         handler = self.handlers.get(messageName)
@@ -227,26 +227,22 @@ class Protocol:
                 self.MSG_DELIVERED(connection, msg_id, recipients)
 
     def handle_CREATE_GROUP(self, connection, message):
+        print(f"handle_CREATE_GROUP called with: {message}")
         if not connection.authenticated:
-            self.bad_request_error(connection, "You aren't logged in")
-            return
-            
-        group_name = message.get("group_name")
+            self.CREATE_GROUP_ACK(connection, "fail", "You aren't logged in")
+
+        group_name = message["data"]["group_name"]
         username = connection.loggedInAs
         
         #to avoid duplicate group(names)
-        if group_name in self.server.groups:
-            self.CREATE_GROUP_NAK(connection, "fail", "Group already exists")
+        if self.server.database.get_group(group_name):
+            self.CREATE_GROUP_ACK(connection, "fail", "Group already exists")
             return
         
-        self.server.groups[group_name] = [username]  
-        
+        self.server.database.create_group(group_name, username)
+        self.server.log(f"Group '{group_name}' created by {username}")
+
         # This group will be added to the list of the user's groups their in
-        if username not in self.server.user_groups:
-            self.server.user_groups[username] = []
-        self.server.user_groups[username].append(group_name)
-        
-        print(f" Group '{group_name}' created by {username}")
         self.CREATE_GROUP_ACK(connection, "success", f"Group '{group_name}' created!")
 
     def handle_JOIN_GROUP(self, connection, message):
@@ -277,23 +273,26 @@ class Protocol:
     def CREATE_GROUP_ACK(self, connection, result, message):
         connection.sendJson({
             "message_name": "CREATE_GROUP_ACK",
-            "type": "CONTROL",
-            "result": result,
-            "message": message
+            "data": {
+                "result": result,
+                "message": message
+            }
         })
 
     def JOIN_GROUP_ACK(self, connection, result, message):
         connection.sendJson({
             "message_name": "JOIN_GROUP_ACK",
-            "type": "CONTROL",
-            "result": result,
-            "message": message
+            "data": {
+                "result": result,
+                "message": message
+            }
         })
 
     def LEAVE_GROUP_ACK(self, connection, result, message):
         connection.sendJson({
             "message_name": "LEAVE_GROUP_ACK",
-            "type": "CONTROL",
-            "result": result,
-            "message": message
+            "data": {
+                "result": result,
+                "message": message
+            }
         })

@@ -9,6 +9,7 @@ class Protocol:
             "AUTH_FAIL": self.handle_AUTH_FAIL,
             "CREATE_ACCOUNT_OK": self.handle_CREATE_ACCOUNT_OK,
             "CREATE_ACCOUNT_FAIL": self.handle_CREATE_ACCOUNT_FAIL,
+            "CREATE_GROUP_ACK": self.handle_CREATE_GROUP_ACK,
             "LOGOUT_ACK": self.handle_LOGOUT_ACK,
         }
 
@@ -50,7 +51,16 @@ class Protocol:
         self.client.interface.display(message["data"]["goodbye_message"])
         self.client.authenticated = False
         self.client.loggedInAs = None
-        # What happens after the logout
+        # What happens after the logout?
+
+    def handle_CREATE_GROUP_ACK(self, connection, message):
+        result =  message["data"]["result"]
+        if result == "success":
+            self.client.interface.display(f'Group creation successful!\n{message["data"]["message"]}')
+        else:
+            self.client.interface.display(f'Group creation unsuccessful!\n{message["data"]["message"]}')
+
+
     def AUTH(self, connection, username, hashed_pword):
         connection.sendJson({
             "message_name": "AUTH",
@@ -95,26 +105,29 @@ class Protocol:
     def CREATE_GROUP(self, connection, group_name):
         connection.sendJson({
             "message_name": "CREATE_GROUP",
-            "type": "COMMAND",
-            "group_name": group_name
-        })
-        print(f"Requesting to create group: {group_name}")
+            "data":
+            {
+                "group_name": group_name
+            }
+        })        
 
     def JOIN_GROUP(self, connection, group_name):
         connection.sendJson({
             "message_name": "JOIN_GROUP",
-            "type": "COMMAND",
-            "group_name": group_name
+            "data":
+            {
+                "group_name": group_name
+            }
         })
-        print(f" Requesting to join group: {group_name}")
 
     def LEAVE_GROUP(self, connection, group_name):
         connection.sendJson({
             "message_name": "LEAVE_GROUP",
-            "type": "COMMAND",
-            "group_name": group_name
+            "data":
+            {
+                "group_name": group_name
+            }
         })
-        print(f"Requesting to leave group: {group_name}")
 
     def MSG(self, connection, chat_id, chat_type, text):
         msg_id = f"msg_{int(time.time())}"
