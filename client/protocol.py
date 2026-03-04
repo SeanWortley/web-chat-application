@@ -27,22 +27,22 @@ class Protocol:
 
         self.client.interface.display(message["data"]["welcome_message"])
         self.client.interface.display("Login successful!")
-        self.client.interface.menu.show_logged_in_menu()
+        self.client.interface.show_logged_in_menu()
         self.client.interface.resume()
 
     def handle_AUTH_FAIL(self, connection, message):
         self.client.interface.display(f"Failed to authenticate: {message["data"]["error_code"]}")
-        self.client.interface.menu.show_logged_out_menu()
+        self.client.interface.show_logged_out_menu()
         self.client.interface.resume()
 
     def handle_CREATE_ACCOUNT_OK(self, connection, message):
         self.client.interface.display(message["data"]["welcome_message"])
-        self.client.interface.menu.show_logged_in_menu()
+        self.client.interface.show_logged_in_menu()
         self.client.interface.resume()
 
     def handle_CREATE_ACCOUNT_FAIL(self, connection, message):
         self.client.interface.display(message["data"]["error_message"])
-        self.client.interface.menu.show_logged_out_menu()
+        self.client.interface.show_logged_out_menu()
         self.client.interface.resume()
 
     def handle_LOGOUT_ACK(self, connection, message):
