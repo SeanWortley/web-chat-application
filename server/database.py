@@ -17,7 +17,6 @@ class Database:
     
     def _initialise(self):
         connection = self._get_connection()
-
         connection.executescript("""
         CREATE TABLE IF NOT EXISTS users (
             username        TEXT    PRIMARY KEY,
@@ -99,10 +98,11 @@ class Database:
             print(f"DB error: {e}")
             return False
 
-    def get_group_members(self, group_name: str):
+    def is_group_member(self, group_name: str, username: str):
         return self._get_connection().execute(
-            "SELECT username FROM group_members WHERE group_name = ?", (group_name,)
-        ).fetchall()
+            "SELECT 1 FROM group_members WHERE group_name = ? AND username = ?",
+            (group_name, username)
+        ).fetchone() is not None
 
     def add_group_member(self, group_name: str, username: str):
         try:
