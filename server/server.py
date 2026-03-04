@@ -40,6 +40,7 @@ class Server:
 
             else: 
                 print("Invalid command. Try /help")
+                
     def get_connection_by_username(self, username):
         for conn in self.connections:
             if conn.loggedInAs == username:
