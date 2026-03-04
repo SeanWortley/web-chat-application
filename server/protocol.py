@@ -13,9 +13,6 @@ class Protocol:
             "JOIN_GROUP": self.handle_JOIN_GROUP,
         }
     
-        self.server.groups = {} #focused on the group, so what users are on which specific grp
-        self.server.user_groups = {} #focused on the user, and names the group each user is in
-
     def handleIncoming(self, connection, clientMessage):
         messageName = clientMessage["message_name"]
         handler = self.handlers.get(messageName)
@@ -230,6 +227,7 @@ class Protocol:
                 self.MSG_DELIVERED(connection, msg_id, recipients)
 
     def handle_CREATE_GROUP(self, connection, message):
+        print(f"handle_CREATE_GROUP called with: {message}")
         if not connection.authenticated:
             self.CREATE_GROUP_ACK(connection, "fail", "You aren't logged in")
 
@@ -238,7 +236,7 @@ class Protocol:
         
         #to avoid duplicate group(names)
         if self.server.database.get_group(group_name):
-            self.CREATE_GROUP_AK(connection, "fail", "Group already exists")
+            self.CREATE_GROUP_ACK(connection, "fail", "Group already exists")
             return
         
         self.server.database.create_group(group_name, username)

@@ -9,6 +9,7 @@ class Protocol:
             "AUTH_FAIL": self.handle_AUTH_FAIL,
             "CREATE_ACCOUNT_OK": self.handle_CREATE_ACCOUNT_OK,
             "CREATE_ACCOUNT_FAIL": self.handle_CREATE_ACCOUNT_FAIL,
+            "CREATE_GROUP_ACK": self.handle_CREATE_GROUP_ACK,
             "LOGOUT_ACK": self.handle_LOGOUT_ACK,
         }
 
@@ -50,7 +51,16 @@ class Protocol:
         self.client.interface.display(message["data"]["goodbye_message"])
         self.client.authenticated = False
         self.client.loggedInAs = None
-        # What happens after the logout
+        # What happens after the logout?
+
+    def handle_CREATE_GROUP_ACK(self, connection, message):
+        result =  message["data"]["result"]
+        if result == "success":
+            self.client.interface.display(f'Group creation successful!\n{message["data"]["message"]}')
+        else:
+            self.client.interface.display(f'Group creation unsuccessful!\n{message["data"]["message"]}')
+
+
     def AUTH(self, connection, username, hashed_pword):
         connection.sendJson({
             "message_name": "AUTH",
@@ -99,7 +109,7 @@ class Protocol:
             {
                 "group_name": group_name
             }
-        })
+        })        
 
     def JOIN_GROUP(self, connection, group_name):
         connection.sendJson({

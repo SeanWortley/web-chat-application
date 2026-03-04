@@ -120,6 +120,9 @@ class Terminal:
             }
         })
 
+    def view_groups(self):
+        pass
+
     def display(self, text): # Will have to be adapted once GUI is added.
         print(text)
         

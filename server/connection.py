@@ -21,7 +21,7 @@ class Connection:
                 self.server.protocol.handleIncoming(self, message)
         
         except Exception as e:
-            print(f"Connection error: {e}")
+            print(f"Unkown error: {e}")
         finally: self.close()
 
     def sendJson(self, outgoing):
