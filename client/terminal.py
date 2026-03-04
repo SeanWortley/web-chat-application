@@ -71,7 +71,7 @@ class Terminal:
     def close(self):
         self.logout()
         self.on_user_input({
-            "message_name": "close"
+            "message_name": "close_connection"
         })
 
     def display(self, text): # Will have to be adapted once GUI is added.

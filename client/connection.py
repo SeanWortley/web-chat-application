@@ -11,8 +11,8 @@ class Connection:
         Thread(target=self.listen).start()
 
     def listen(self):
-        while True:
-            try:
+        try:
+            while True:
                 data = self.socket.recv(1024)
                 if not data:
                     break
@@ -20,10 +20,10 @@ class Connection:
                 message = json.loads(data.decode())
                 self.client.awaiting_response = False
                 self.client.protocol.handleIncoming(self, message)
-        
-            except Exception as e:
-                print(f"Connection error: {e}")
-                break
+        except Exception as e:
+            print(f"Connection error: {e}")
+        finally:
+            self.close()
 
 
     def sendJson(self, outgoing):
