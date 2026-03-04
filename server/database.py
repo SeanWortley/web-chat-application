@@ -28,7 +28,7 @@ class Database:
         CREATE TABLE IF NOT EXISTS groups (
         group_name  TEXT    PRIMARY KEY,
         owner       TEXT    NOT NULL,
-        FOREIGN KEY (created_by) REFERENCES users(username)
+        FOREIGN KEY (owner) REFERENCES users(username)
         );
         """)
 
@@ -50,10 +50,9 @@ class Database:
         sender      TEXT    NOT NULL,
         chat_id     TEXT    NOT NULL,
         content     TEXT    NOT NULL,
-        timestamp   TEXT    NOT NULL
-        PRIMARY KEY (msg_id, chat_id)
-        FOREIGN KEY (sender)    REFERENCES users(username),
-        FOREIGN KEY (username)  REFERENCES users(username)
+        timestamp   TEXT    NOT NULL,
+        PRIMARY KEY (msg_id, chat_id),
+        FOREIGN KEY (sender) REFERENCES users(username)
         );
         """)
 
@@ -62,10 +61,10 @@ class Database:
         CREATE TABLE IF NOT EXISTS pending_recipients (
         msg_id      TEXT    NOT NULL,
         chat_id     TEXT    NOT NULL,
-        recipient   TEXT    NOT NULL,  
+        recipient   TEXT    NOT NULL  
         );
         """)
-
+        connection.commit()
 
     def _get_connection(self):
         if hasattr(self._local, "connection"):
@@ -75,4 +74,23 @@ class Database:
             self._local.connection.row_factory = sqlite3.Row
             self._local.connection.execute("PRAGMA foreign_keys = ON")
         return self._local.connection
+
+    def create_user(self, usernam str, hashed_password: str):
+        try:
+            self._get_connection().execute("INSERT INTO users (username, hashed_password) VALUES (?,?), (username, hashed_password)")
+        
+            self._get_connection().commit()
+            return True
+        except sqlite3.IntegerityError:
+            return False
+    
+    def get_user(self, username: str):
+        result = self._get_connection().execute("SELECT * FROM users WHERE username = ?", (username,))
+
+        return result.fetchone()
+
+    def validatte_credentials(self, username: str, hashed_password: str):
+        user = self.get_user(username)
+        return (user is not None) and (user["hashed_password"] == hashed_password)
+
     
