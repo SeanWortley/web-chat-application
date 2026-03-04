@@ -3,6 +3,8 @@ from threading import local
 """
 DO NOT ACCESS FUNCTIONS OR VARIABLES 
 BEGINNING WITH '_' OUTSIDE OF THIS FUNCTION
+
+Arguements have aspecified type to prevent bad DB interactions.
 """
 
 class Database:
@@ -75,7 +77,7 @@ class Database:
             self._local.connection.execute("PRAGMA foreign_keys = ON")
         return self._local.connection
 
-    def create_user(self, usernam str, hashed_password: str):
+    def create_user(self, username: str, hashed_password: str):
         try:
             self._get_connection().execute("INSERT INTO users (username, hashed_password) VALUES (?,?), (username, hashed_password)")
         
