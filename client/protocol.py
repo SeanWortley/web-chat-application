@@ -67,8 +67,13 @@ class Protocol:
                 "hashed_password": hashed_pword
             }
         })
+    def LOGOUT(self, connection):
+        connection.sendJson({
+            "message_name": "LOGOUT"
+        })
 
-    def CREATE_GROUP(self, connection, groupname, members):
+    # Removed create group
+    """def CREATE_GROUP(self, connection, groupname, members):
         connection.sendJson({
             "message_name": "CREATE_GROUP",
             "data": {
@@ -84,9 +89,5 @@ class Protocol:
                 "group_name": groupname
             }
         })
-
-    def LOGOUT(self, connection):
-        connection.sendJson({
-            "message_name": "LOGOUT"
-        })
+    """
 

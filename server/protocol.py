@@ -70,7 +70,9 @@ class Protocol:
                 "welcome_message": welcome_message}
         })
 
-    def handle_CREATE_GROUP(self, connection, message):
+    # Removed Sande's handling group creation, join, leave
+    """
+        def handle_CREATE_GROUP(self, connection, message):
         group_name = message["data"]["group_name"]
         members = message["data"]["members"]  
         # Prevent duplicate group names
@@ -141,6 +143,7 @@ class Protocol:
         self.terminal.display(f"Members: {', '.join(members)}")
 
         self.terminal.resume()
+    """
 
     def CREATE_ACCOUNT_FAIL(self, connection):
         error_message = "A user with that name already exists!"
