@@ -25,7 +25,6 @@ class Connection:
         finally:
             self.close()
 
-
     def sendJson(self, outgoing):
         encoded = json.dumps(outgoing).encode()
         self.socket.send(encoded)

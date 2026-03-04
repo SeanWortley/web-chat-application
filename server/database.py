@@ -79,11 +79,11 @@ class Database:
 
     def create_user(self, username: str, hashed_password: str):
         try:
-            self._get_connection().execute("INSERT INTO users (username, hashed_password) VALUES (?,?), (username, hashed_password)")
+            self._get_connection().execute("INSERT INTO users (username, hashed_password) VALUES (?,?)", (username, hashed_password))
         
             self._get_connection().commit()
             return True
-        except sqlite3.IntegerityError:
+        except sqlite3.IntegrityError:
             return False
     
     def get_user(self, username: str):
