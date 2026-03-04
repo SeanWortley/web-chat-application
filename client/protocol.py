@@ -52,4 +52,42 @@ class Protocol:
     def handle_CREATE_ACCOUNT_FAIL():
         pass
         
+    def CREATE_GROUP(self, connection, group_name):
+        connection.sendJson({
+            "message_name": "CREATE_GROUP",
+            "type": "COMMAND",
+            "group_name": group_name
+        })
+        print(f"Requesting to create group: {group_name}")
+
+    def JOIN_GROUP(self, connection, group_name):
+        connection.sendJson({
+            "message_name": "JOIN_GROUP",
+            "type": "COMMAND",
+            "group_name": group_name
+        })
+        print(f" Requesting to join group: {group_name}")
+
+    def LEAVE_GROUP(self, connection, group_name):
+        connection.sendJson({
+            "message_name": "LEAVE_GROUP",
+            "type": "COMMAND",
+            "group_name": group_name
+        })
+        print(f"Requesting to leave group: {group_name}")
+
+    def MSG(self, connection, chat_id, chat_type, text):
+        msg_id = f"msg_{int(time.time())}"
+        timestamp = time.time()
+        
+        connection.sendJson({
+            "message_name": "MSG",
+            "type": "DATA",
+            "from": self.client.username,
+            "chat_id": chat_id,
+            "chat_type": chat_type,
+            "msg_id": msg_id,
+            "timestamp": timestamp,
+            "payload": text
+        })
     
