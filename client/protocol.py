@@ -5,7 +5,10 @@ class Protocol:
         self.client = client
         self.handlers = {
             "AUTH_OK": self.handle_AUTH_OK,
-            "AUTH_FAIL": self.handle_AUTH_FAIL
+            "AUTH_FAIL": self.handle_AUTH_FAIL,
+            "CREATE_ACCOUNT_OK": self.handle_CREATE_ACCOUNT_OK,
+            "CREATE_ACCOUNT_FAIL": self.handle_CREATE_ACCOUNT_FAIL,
+            "LOGOUT_ACK": self.handle_LOGOUT_ACK,
         }
 
     def handleIncoming(self, connection, serverMessage):
@@ -13,45 +16,54 @@ class Protocol:
         handler = self.handlers.get(messageName)
         if handler:
             handler(connection, serverMessage)
+
         else: 
-            print(f"Unknown message: {serverMessage["message_name"]}")
+            self.client.interface.display(f"Unknown message: {serverMessage["message_name"]}")
+        self.client.interface.resume()
 
     def handle_AUTH_OK(self, connection, message):
         self.client.authenticated = True
         self.client.username = True
 
-        print(message["data"]["welcome_message"])
+        self.client.interface.display(message["data"]["welcome_message"])
     
     def handle_AUTH_FAIL(self, connection, message):
-        print(f"Failed to authenticate: {message["data"]["error_code"]}")
+        self.client.interface.display(f"Failed to authenticate: {message["data"]["error_code"]}")
 
-        choice = input("Would you like to try again? (Yes/No)\n")
-        if (choice.lower() == "yes") or (choice.lower() == "y"):
-            self.AUTH(connection)
+    def handle_CREATE_ACCOUNT_OK(self, connection, message):
+        self.client.interface.display(message["data"]["welcome_message"])
 
-    def AUTH(self, connection):
-        username = input("Enter your username: ")
-        hashed_pword = (sha256(input("Enter your password: ").encode())).hexdigest()
-        
+    def handle_CREATE_ACCOUNT_FAIL(self, connection, message):
+        self.client.interface.display(message["data"]["error_message"])
+
+    def handle_LOGOUT_ACK(self, connection, message):
+        self.client.interface.display(message["data"]["goodbye_message"])
+        self.client.authenticated = False
+        self.client.loggedInAs = None
+
+    def AUTH(self, connection, username, hashed_pword):
         connection.sendJson({
             "message_name": "AUTH",
-            "username": username,
-            "hashed_password": hashed_pword
+            "data": {
+                "username": username,
+                "hashed_password": hashed_pword
+            }
         })
 
-    def CREATE_ACCOUNT(self, connection):
-        username = input("Enter your desired username: ")
-        hashed_pword = (sha256(input("Enter your desired password: ").encode())).hexdigest()
-
+    def CREATE_ACCOUNT(self, connection, username, hashed_pword):
         connection.sendJson({
             "message_name": "CREATE_ACCOUNT",
-            "username": username,
-            "hashed_password": hashed_pword
+            "data": {
+                "username": username,
+                "hashed_password": hashed_pword
+            }
         })
 
-    def handle_CREATE_ACCOUNT_FAIL():
-        pass
-        
+    def LOGOUT(self, connection):
+        connection.sendJson({
+            "message_name": "LOGOUT"
+        })
+
     def CREATE_GROUP(self, connection, group_name):
         connection.sendJson({
             "message_name": "CREATE_GROUP",

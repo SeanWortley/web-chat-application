@@ -24,8 +24,8 @@ class Protocol:
             print(f"Unknown message: {clientMessage["message_name"]}")
 
     def handle_AUTH(self, connection, message):
-        username = message["username"]
-        hashed_pword = message["hashed_password"]
+        username = message["data"]["username"]
+        hashed_pword = message["data"]["hashed_password"]
         if (username in self.server.userList) and hashed_pword == (self.server.userList[username]):
             connection.authenticated = True
             connection.loggedInAs = username
@@ -34,8 +34,8 @@ class Protocol:
             self.AUTH_FAIL(connection)
 
     def handle_CREATE_ACCOUNT(self, connection, message):
-        username = message["username"]
-        hashed_pword = message["hashed_password"]
+        username = message["data"]["username"]
+        hashed_pword = message["data"]["hashed_password"]
         if (username not in self.server.userList):
             self.server.userList[username] = hashed_pword
             connection.authenticated = True
@@ -44,27 +44,60 @@ class Protocol:
         else:
             self.CREATE_ACCOUNT_FAIL(connection)
 
+    def handle_LOGOUT(self, connection, message):
+        username = connection.loggedInAs
+        connection.authenticated = True
+        connection.loggedInAs = None
+        self.LOGOUT_ACK(connection, username)
+
     def AUTH_OK(self, connection):
         welcome_message = f'Welcome back, {connection.loggedInAs}!'
 
         connection.sendJson({
             "message_name": "AUTH_OK", 
-            "data": {"welcome_message": welcome_message}
+            "data": {
+                "welcome_message": welcome_message}
                 })
 
     def AUTH_FAIL(self, connection):
-        error_code = "INCORRECT USERNAME OR PASSWORD"
+        error_message = "INCORRECT USERNAME OR PASSWORD"
         connection.sendJson({
             "message_name": "AUTH_FAIL",
-            "data": {"error_code": error_code}
+            "data": {
+                "error_code": error_message}
         })
 
     def CREATE_ACCOUNT_OK(self, connection):
-        pass
+        welcome_message = f"welcome new user, {connection.loggedInAs}!"
+
+        connection.sendJson({
+            "message_name": "CREATE_ACCOUNT_OK",
+            "data": {
+                "welcome_message": welcome_message}
+        })
 
     def CREATE_ACCOUNT_FAIL(self, connection):
-        pass
-    
+        error_message = "A user with that name already exists!"
+
+        connection.sendJson({
+            "message_name": "CREATE_ACCOUNT_FAIL",
+            "data": {
+                "error_message": error_message
+            }
+        })
+
+    def LOGOUT_ACK(self, connection, username):
+        if username:
+            goodbye_message = f"Goodbye, {username}!"
+        else:
+            goodbye_message = "You are already logged out."
+
+        connection.sendJson({
+            "message_name": "LOGOUT_ACK",
+            "data": {
+                "goodbye_message": goodbye_message
+                }
+        })
 
     def handle_MSG(self, connection, message):
         #this is for when a message is sent, from both group instance and private chat instance
