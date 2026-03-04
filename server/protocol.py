@@ -44,7 +44,7 @@ class Protocol:
 
     def handle_LOGOUT(self, connection, message):
         username = connection.loggedInAs
-        connection.authenticated = True
+        connection.authenticated = False
         connection.loggedInAs = None
         self.LOGOUT_ACK(connection, username)
 
