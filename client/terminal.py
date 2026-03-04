@@ -9,6 +9,7 @@ class Terminal:
             "/login": self.login,
             "/register": self.register,
             "/logout": self.logout,
+            "/close": self.close
         }
 
         self.on_user_input = None
@@ -65,6 +66,12 @@ class Terminal:
     def logout(self):
         self.on_user_input({
             "message_name": "LOGOUT"
+        })
+
+    def close(self):
+        self.logout()
+        self.on_user_input({
+            "message_name": "close"
         })
 
     def display(self, text): # Will have to be adapted once GUI is added.
