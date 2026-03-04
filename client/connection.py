@@ -18,10 +18,10 @@ class Connection:
                     break
                 
                 message = json.loads(data.decode())
-                self.client.awaiting_response = False
                 self.client.protocol.handleIncoming(self, message)
         except Exception as e:
-            print(f"Connection error: {e}")
+            if not self.socket._closed:
+                print(f"Connection error: {e}")
         finally:
             self.close()
 

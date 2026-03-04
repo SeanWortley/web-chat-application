@@ -18,7 +18,7 @@ class Terminal:
 
     def start(self):
         print("Welcome to the terminal interface for our chat application!")
-        print("To get started, type '/login', or '/help' for a list of commands.")
+        print("To get started, type '/login', '/register', or '/help' for a list of commands.")
         Thread(target=self.input_loop).start()
 
     def input_loop(self):
