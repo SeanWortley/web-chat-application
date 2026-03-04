@@ -9,7 +9,7 @@ class Terminal:
             "/login": self.login,
             "/register": self.register,
             "/logout": self.logout,
-            "/close": self.close
+            "/quit": self.quit
         }
         self.on_user_input = None
         self.wait_event = Event()
@@ -87,7 +87,7 @@ class Terminal:
             "message_name": "LOGOUT"
         })
 
-    def close(self):
+    def quit(self):
         self.running = False
         self.logout()
         self.on_user_input({
