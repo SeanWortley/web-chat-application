@@ -1,5 +1,6 @@
 from hashlib import sha256
 import time
+from tokenize import group
 
 class Protocol:
     def __init__(self, client):
@@ -75,8 +76,11 @@ class Protocol:
             self.client.interface.display(message["data"]["message"])
         else:
             groups = message["data"]["groups"]
-            for i in groups:
-                self.client.interface.display(i)
+            if groups:
+                for i in groups:
+                    self.client.interface.display(i)
+            else:
+                self.client.interface.display("You do not belong to any groups")
 
     def AUTH(self, connection, username, hashed_pword):
         connection.sendJson({
