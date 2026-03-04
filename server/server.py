@@ -7,9 +7,7 @@ from database import Database
 import argparse
 
 
-class Server:
-    userList = {"username": sha256("password".encode()).hexdigest(), "admin": sha256("admin".encode()).hexdigest()}
-    
+class Server:    
     def __init__(self, host, port, verbose):
         self.verbose = verbose
         self.socket = socket(AF_INET, SOCK_STREAM)
