@@ -153,7 +153,10 @@ class Protocol:
         })
 
     def LOGOUT_ACK(self, connection, username):
-        goodbye_message = f"Goodbye, {username}"
+        if username:
+            goodbye_message = f"Goodbye, {username}!"
+        else:
+            goodbye_message = "You are already logged out."
 
         connection.sendJson({
             "message_name": "LOGOUT_ACK",

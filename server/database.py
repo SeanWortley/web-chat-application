@@ -3,6 +3,8 @@ from threading import local
 """
 DO NOT ACCESS FUNCTIONS OR VARIABLES 
 BEGINNING WITH '_' OUTSIDE OF THIS FUNCTION
+
+Arguements have aspecified type to prevent bad DB interactions.
 """
 
 class Database:

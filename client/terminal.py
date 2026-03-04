@@ -23,7 +23,7 @@ class Terminal:
         Thread(target=self.input_loop).start()
 
     def input_loop(self):
-        while True:
+        while self.running:
             text = input("> ")
 
             if text in self.commands:
@@ -52,12 +52,7 @@ class Terminal:
                 "hashed_password": hashed_pword
             }
         })
-        
-    def logout(self):
-        self.on_user_input({
-            "message_name": "LOGOUT"
-        })
-    
+
     def register(self):
         username = input("Enter your desired username:\n> ")
         hashed_pword = (sha256(input("Enter your desired password:\n> ").encode())).hexdigest()
@@ -68,6 +63,18 @@ class Terminal:
                 "username": username,
                 "hashed_password": hashed_pword
             }
+        })
+        
+    def logout(self):
+        self.on_user_input({
+            "message_name": "LOGOUT"
+        })
+
+    def close(self):
+        self.running = False
+        self.logout()
+        self.on_user_input({
+            "message_name": "close_connection"
         })
 
     def display(self, text): # Will have to be adapted once GUI is added.
