@@ -11,19 +11,19 @@ class Connection:
         Thread(target=self.listen).start()
 
     def listen(self):
-        while True:
-            try:
+        try:
+            while True:
                 data = self.socket.recv(1024)
                 if not data:
                     break
                 
                 message = json.loads(data.decode())
-                self.client.awaiting_response = False
                 self.client.protocol.handleIncoming(self, message)
-        
-            except Exception as e:
+        except Exception as e:
+            if not self.socket._closed:
                 print(f"Connection error: {e}")
-                break
+        finally:
+            self.close()
 
 
     def sendJson(self, outgoing):
@@ -31,4 +31,5 @@ class Connection:
         self.socket.send(encoded)
 
     def close(self):
-        self.socket.close()
+        if not self.socket._closed:
+            self.socket.close()

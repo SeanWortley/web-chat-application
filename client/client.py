@@ -30,6 +30,8 @@ class Client:
                 self.protocol.CREATE_ACCOUNT(self.connection, input["data"]["username"], input["data"]["hashed_password"])
             case "LOGOUT":
                 self.protocol.LOGOUT(self.connection)
+            case "close_connection":
+                self.connection.close()
             case _:
                 pass
 
