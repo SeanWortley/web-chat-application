@@ -10,7 +10,8 @@ import argparse
 class Server:
     userList = {"username": sha256("password".encode()).hexdigest(), "admin": sha256("admin".encode()).hexdigest()}
     
-    def __init__(self, host, port):
+    def __init__(self, host, port, verbose):
+        self.verbose = verbose
         self.socket = socket(AF_INET, SOCK_STREAM)
         self.socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         self.socket.bind((host, port))
@@ -43,7 +44,7 @@ def main():
     args = parser.parse_args()
     print(args.host, args.port, args.verbose)
 
-    server = Server(args.host, args.port)
+    server = Server(args.host, args.port, args.verbose)
     server.listen()
 
 
