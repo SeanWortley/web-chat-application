@@ -11,6 +11,7 @@ class Protocol:
             "MSG": self.handle_MSG,
             "CREATE_GROUP": self.handle_CREATE_GROUP,
             "JOIN_GROUP": self.handle_JOIN_GROUP,
+            "GROUP_LIST": self.handle_GROUP_LIST
         }
     
     def handleIncoming(self, connection, clientMessage):
@@ -264,6 +265,27 @@ class Protocol:
         self.server.database.add_group_member(group_name, username)
         self.server.log(f"{username} joined '{group_name}'")
         self.JOIN_GROUP_ACK(connection, "success", f"You joined '{group_name}'")
+
+    def handle_GROUP_LIST(self, connection, message):
+        if not connection.authenticated:
+            self.GROUP_LIST_ACK(connection, "fail", [], f"You aren't logged in")
+            return
+
+        username = connection.loggedInAs
+        groups = self.server.database.get_user_groups(username)
+        group_names = [row["group_name"] for row in groups]
+
+        self.GROUP_LIST_ACK(connection, "success", group_names, None)
+
+    def GROUP_LIST_ACK(self, connection, result, groups, message):
+        connection.sendJson({
+            "message_name": "GROUP_LIST_ACK",
+            "data": {
+                "result": result,
+                "groups": groups,
+                "message": message
+            }
+        })
 
     def CREATE_GROUP_ACK(self, connection, result, message):
         connection.sendJson({

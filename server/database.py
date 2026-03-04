@@ -115,6 +115,13 @@ class Database:
         except sqlite3.IntegrityError as e:
             print(f"DB error: {e}")
             return False
+    
+    def get_user_groups(self, username: str):
+        result = self._get_connection().execute(
+            "SELECT group_name FROM group_members WHERE username = ?",
+            (username,)
+        )
+        return result.fetchall()
 
     def store_offline_message(self, msg_id: str, sender: str, chat_id: str, content: str, timestamp: str):
         try:
