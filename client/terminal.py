@@ -9,7 +9,11 @@ class Terminal:
             "/login": self.login,
             "/register": self.register,
             "/logout": self.logout,
-            "/quit": self.quit
+            "/quit": self.quit,
+            "1": self.view_groups,
+            "2": self.create_group,
+            "3": self.join_group
+
         }
         self.on_user_input = None
         self.wait_event = Event()
@@ -96,27 +100,23 @@ class Terminal:
 
     def create_group(self):
         group_name = input("Enter your desired group name:\n> ")
-        members = []
-        print("Add members to the group. Type 'done' when finished. Max 4 members.")
         
-        while len(members) < 4:
-            member = input(f"Member {len(members)+1}:\n> ")
-
-            if member.lower() == "done":
-                break
-
-            if member in members:
-                print(f"{member} is already in the group.")
-                continue
-
-            members.append(member)
-        
-        # Send group creation to server after finishing
+        # Pass message to client.py
         self.on_user_input({
             "message_name": "CREATE_GROUP",
             "data": {
-                "group_name": group_name,
-                "members": members,
+                "group_name": group_name
+            }
+        })
+    
+    def join_group(self):
+        group_name = input("Enter the name of the group you'd like to join:\n> ")
+        
+        # Pass message to client.py
+        self.on_user_input({
+            "message_name": "JOIN_GROUP",
+            "data": {
+                "group_name": group_name
             }
         })
 

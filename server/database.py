@@ -91,7 +91,7 @@ class Database:
 
         return result.fetchone()
 
-    def validatte_credentials(self, username: str, hashed_password: str):
+    def validate_credentials(self, username: str, hashed_password: str):
         user = self.get_user(username)
         return (user is not None) and (user["hashed_password"] == hashed_password)
 

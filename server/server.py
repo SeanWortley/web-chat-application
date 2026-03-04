@@ -32,6 +32,10 @@ class Server:
             if conn.loggedInAs == username:
                 return conn
         return None
+    
+    def log(self, message):
+        if self.verbose:
+            print(message)
 
 def main():
     # Parse in arguements

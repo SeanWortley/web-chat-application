@@ -95,26 +95,29 @@ class Protocol:
     def CREATE_GROUP(self, connection, group_name):
         connection.sendJson({
             "message_name": "CREATE_GROUP",
-            "type": "COMMAND",
-            "group_name": group_name
+            "data":
+            {
+                "group_name": group_name
+            }
         })
-        print(f"Requesting to create group: {group_name}")
 
     def JOIN_GROUP(self, connection, group_name):
         connection.sendJson({
             "message_name": "JOIN_GROUP",
-            "type": "COMMAND",
-            "group_name": group_name
+            "data":
+            {
+                "group_name": group_name
+            }
         })
-        print(f" Requesting to join group: {group_name}")
 
     def LEAVE_GROUP(self, connection, group_name):
         connection.sendJson({
             "message_name": "LEAVE_GROUP",
-            "type": "COMMAND",
-            "group_name": group_name
+            "data":
+            {
+                "group_name": group_name
+            }
         })
-        print(f"Requesting to leave group: {group_name}")
 
     def MSG(self, connection, chat_id, chat_type, text):
         msg_id = f"msg_{int(time.time())}"
