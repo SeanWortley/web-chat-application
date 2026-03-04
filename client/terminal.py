@@ -9,11 +9,13 @@ class Terminal:
             "/login": self.login,
             "/register": self.register,
             "/logout": self.logout,
-            "2": self.create_group
+            "2": self.create_group, 
+            "/msg": self.send_message,
         }
         self.on_user_input = None
         self.wait_event = Event()
         self.running = True
+        self.logged_in = False
 
     def start(self):
         print("Welcome to the terminal interface for our chat application!")
@@ -23,9 +25,18 @@ class Terminal:
 
     def input_loop(self):
         while self.running:
-            text = input("> ")
+            text = input("> ").strip()
 
-            if text in self.commands:
+            if text.startswith("/msg "):
+        # Extract recipient and message
+                parts = text[5:].split(maxsplit=1)  # Remove "/msg " and split
+                if len(parts) == 2:
+                    recipient, message = parts
+                    self.send_message(recipient, message)  # This was indented wrong
+                else:
+                    print("Usage: /msg username message")
+            
+            elif text in self.commands:
                 command = self.commands.get(text)
                 self.wait_event.clear()
                 command()
@@ -118,4 +129,20 @@ class Terminal:
 
     def display(self, text): # Will have to be adapted once GUI is added.
         print(text)
+
+    def send_message(self, recipient, message):
+        print(f"send_message called, logged_in={self.logged_in}")
+        if not self.logged_in:
+            print("You must be logged in first")
+            return
+            
+        self.on_user_input({
+            "message_name": "MSG",
+            "data": {
+                "chat_id": recipient,
+                "chat_type": "private",
+                "payload": message
+            }
+        })
+        print(f"Message sent to {recipient}")
         

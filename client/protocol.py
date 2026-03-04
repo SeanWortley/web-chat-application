@@ -1,4 +1,5 @@
 from hashlib import sha256
+import time
 
 class Protocol:
     def __init__(self, client):
@@ -9,6 +10,8 @@ class Protocol:
             "CREATE_ACCOUNT_OK": self.handle_CREATE_ACCOUNT_OK,
             "CREATE_ACCOUNT_FAIL": self.handle_CREATE_ACCOUNT_FAIL,
             "LOGOUT_ACK": self.handle_LOGOUT_ACK,
+            "MSG": self.handle_MSG,  
+            "MSG_DELIVERED": self.handle_MSG_DELIVERED,
         }
 
     def handleIncoming(self, connection, serverMessage):
@@ -22,34 +25,27 @@ class Protocol:
         self.client.interface.resume()
 
     def handle_AUTH_OK(self, connection, message):
+        self.client.interface.logged_in = True
         self.client.authenticated = True
         self.client.username = True
 
         self.client.interface.display(message["data"]["welcome_message"])
-        self.client.interface.display("Login successful!")
-        self.client.interface.show_logged_in_menu()
-        self.client.interface.resume()
-
+    
     def handle_AUTH_FAIL(self, connection, message):
         self.client.interface.display(f"Failed to authenticate: {message["data"]["error_code"]}")
-        self.client.interface.show_logged_out_menu()
-        self.client.interface.resume()
 
     def handle_CREATE_ACCOUNT_OK(self, connection, message):
         self.client.interface.display(message["data"]["welcome_message"])
-        self.client.interface.show_logged_in_menu()
-        self.client.interface.resume()
+        self.client.interface.logged_in = True
 
     def handle_CREATE_ACCOUNT_FAIL(self, connection, message):
         self.client.interface.display(message["data"]["error_message"])
-        self.client.interface.show_logged_out_menu()
-        self.client.interface.resume()
 
     def handle_LOGOUT_ACK(self, connection, message):
         self.client.interface.display(message["data"]["goodbye_message"])
         self.client.authenticated = False
         self.client.loggedInAs = None
-        # What happens after the logout
+
     def AUTH(self, connection, username, hashed_pword):
         connection.sendJson({
             "message_name": "AUTH",
@@ -68,25 +64,67 @@ class Protocol:
             }
         })
 
-    def CREATE_GROUP(self, connection, groupname, members):
-        connection.sendJson({
-            "message_name": "CREATE_GROUP",
-            "data": {
-                "group_name": groupname,
-                "members": members
-            }
-        })
-    def JOIN_GROUP(self, connection, username, groupname):
-        connection.sendJson({
-            "message_name": "JOIN_GROUP",
-            "data": {
-                "username": username,
-                "group_name": groupname
-            }
-        })
-
     def LOGOUT(self, connection):
         connection.sendJson({
             "message_name": "LOGOUT"
         })
 
+    def CREATE_GROUP(self, connection, group_name):
+        connection.sendJson({
+            "message_name": "CREATE_GROUP",
+            "type": "COMMAND",
+            "group_name": group_name
+        })
+        print(f"Requesting to create group: {group_name}")
+
+    def JOIN_GROUP(self, connection, group_name):
+        connection.sendJson({
+            "message_name": "JOIN_GROUP",
+            "type": "COMMAND",
+            "group_name": group_name
+        })
+        print(f" Requesting to join group: {group_name}")
+
+    def LEAVE_GROUP(self, connection, group_name):
+        connection.sendJson({
+            "message_name": "LEAVE_GROUP",
+            "type": "COMMAND",
+            "group_name": group_name
+        })
+        print(f"Requesting to leave group: {group_name}")
+
+    def MSG(self, connection, chat_id, chat_type, text):
+        msg_id = f"msg_{int(time.time())}"
+        timestamp = time.time()
+        
+        connection.sendJson({
+            "message_name": "MSG",
+            "type": "DATA",
+            "from": self.client.username,
+            "chat_id": chat_id,
+            "chat_type": chat_type,
+            "msg_id": msg_id,
+            "timestamp": timestamp,
+            "payload": text
+        })
+
+    def handle_MSG(self, connection, message):
+    #Display incoming message
+        data = message["data"]
+        from_user = data.get("from")
+        chat_id = data.get("chat_id")
+        chat_type = data.get("chat_type")
+        payload = data.get("payload")
+    
+        if chat_type == "private":
+            self.client.interface.display(f"\n[PM from {from_user}]: {payload}")
+        elif chat_type == "group":
+            self.client.interface.display(f"\n[{chat_id}] {from_user}: {payload}")
+
+    def handle_MSG_DELIVERED(self, connection, message):
+    #Show message delivery confirmation
+        data = message["data"]
+        msg_id = data.get("message_id")
+        recipients = data.get("recipients", [])
+        self.client.interface.display(f"✓ Message delivered to: {', '.join(recipients)}")
+    

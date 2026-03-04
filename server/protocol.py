@@ -6,7 +6,10 @@ class Protocol:
             "CREATE_ACCOUNT": self.handle_CREATE_ACCOUNT,
             "LOGOUT": self.handle_LOGOUT,  
             "CREATE_GROUP": self.handle_CREATE_GROUP,
-            "CREATE_GROUP_ACK": self.handle_CREATE_GROUP_ACK      
+            "CREATE_GROUP_ACK": self.handle_CREATE_GROUP_ACK,  
+            "JOIN_GROUP": self.handle_JOIN_GROUP,  
+            "LEAVE_GROUP": self.handle_LEAVE_GROUP, 
+            "MSG": self.handle_MSG,      
         }
 
     def handleIncoming(self, connection, clientMessage):
@@ -164,5 +167,62 @@ class Protocol:
                 "goodbye_message": goodbye_message
                 }
         })
+
+    def handle_MSG(self, connection, message):
+        if not connection.authenticated:
+         return
+    
+        from_user = connection.loggedInAs
+
+        chat_id = message.get("chat_id")  
+        chat_type = message.get("chat_type")  
+        msg_id = message.get("msg_id") 
+        timestamp = message.get("timestamp")  
+        payload = message.get("payload")
+    
+        if chat_type == "private":
+       
+            recipient = chat_id
+            recipient_conn = self.server.get_connection_by_username(recipient)
+        
+            if recipient_conn:
+                recipient_conn.sendJson({
+                    "message_name": "MSG",
+                    "data": {
+                    "from": from_user,
+                    "chat_id": chat_id,
+                    "chat_type": chat_type,
+                    "msg_id": msg_id,
+                    "timestamp": timestamp,
+                    "payload": payload
+                }
+            })
+            
+            connection.sendJson({
+                "message_name": "MSG_DELIVERED",
+                "data": {
+                    "message_id": msg_id,
+                    "recipients": [recipient]
+                }
+            })
+    
+        elif chat_type == "group":
+        # Message will be sent to all group members
+            if chat_id in self.server.groups:
+                for member in self.server.groups[chat_id]:
+                    if member != from_user:
+                        member_conn = self.server.get_connection_by_username(member)
+                        if member_conn:
+                            member_conn.sendJson({
+                            "message_name": "MSG",
+                            "data": {
+                                "from": from_user,
+                                "chat_id": chat_id,
+                                "chat_type": chat_type,
+                                "msg_id": msg_id,
+                                "timestamp": timestamp,
+                                "payload": payload
+                            }
+                        })
 
     

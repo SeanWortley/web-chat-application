@@ -18,6 +18,7 @@ class Connection:
                 if not data:
                     break
                 message = json.loads(data.decode())
+                print("Received from server:", message)
                 self.server.protocol.handleIncoming(self, message)
         
         except Exception as e:
