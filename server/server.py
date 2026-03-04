@@ -3,6 +3,7 @@ from socket import *
 from hashlib import sha256
 from connection import Connection
 from protocol import Protocol
+from database import Database
 
 
 class Server:
@@ -13,6 +14,7 @@ class Server:
         self.socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         self.socket.bind((host, port))
         self.protocol = Protocol(self)
+        self.database = Database()
         self.socket.listen()
         self.groups = {}  # stores groups: {group_name: [username1, username2]}
         self.connections = []  # track all active connections
