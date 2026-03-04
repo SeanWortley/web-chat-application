@@ -28,11 +28,10 @@ class Terminal:
             text = input("> ").strip()
 
             if text.startswith("/msg "):
-        # Extract recipient and message
-                parts = text[5:].split(maxsplit=1)  # Remove "/msg " and split
+                parts = text[5:].split(maxsplit=1)  
                 if len(parts) == 2:
                     recipient, message = parts
-                    self.send_message(recipient, message)  # This was indented wrong
+                    self.send_message(recipient, message)  
                 else:
                     print("Usage: /msg username message")
             
