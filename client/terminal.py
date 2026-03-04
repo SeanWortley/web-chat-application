@@ -4,6 +4,7 @@ from hashlib import sha256
 class Terminal:
 
     def __init__(self):
+        self.running = True
         self.commands = {
             "/help": self.displayHelp,
             "/login": self.login,
@@ -21,7 +22,7 @@ class Terminal:
         Thread(target=self.input_loop).start()
 
     def input_loop(self):
-        while True:
+        while self.running:
             text = input("> ")
 
             if text in self.commands:
@@ -69,6 +70,7 @@ class Terminal:
         })
 
     def close(self):
+        self.running = False
         self.logout()
         self.on_user_input({
             "message_name": "close_connection"

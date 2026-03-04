@@ -31,4 +31,5 @@ class Connection:
         self.socket.send(encoded)
 
     def close(self):
-        self.socket.close()
+        if not self.socket._closed:
+            self.socket.close()
