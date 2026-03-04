@@ -1,19 +1,24 @@
 import sqlite3
-from threading import Lock
+from threading import local
+
+"""
+DO NOT ACCESS FUNCTIONS OR VARIABLES 
+BEGINNING WITH '_' OUTSIDE OF THIS FUNCTION
+
+Arguments have a specified type to prevent bad DB interactions.
+"""
 
 class Database:
     DB_PATH = "chat_server.db"
 
     def __init__(self):
-        self._lock = Lock()
-        self._connection = sqlite3.connect(self.DB_PATH, check_same_thread=False)
-        self._connection.row_factory = sqlite3.Row
-        self._connection.execute("PRAGMA foreign_keys = ON")
+        self._local = local()
         self._initialise()
     
     def _initialise(self):
-        conn = self._connection
-        conn.executescript("""
+        connection = self._get_connection()
+
+        connection.executescript("""
         CREATE TABLE IF NOT EXISTS users (
             username        TEXT    PRIMARY KEY,
             hashed_password TEXT    NOT NULL
@@ -45,68 +50,67 @@ class Database:
             recipient   TEXT    NOT NULL
         );
         """)
-        conn.execute("PRAGMA foreign_keys = ON")
-        conn.commit()
+        connection.execute("PRAGMA foreign_keys = ON")
+        connection.commit()
+
+    def _get_connection(self):
+        if not hasattr(self._local, "connection"):
+            self._local.connection = sqlite3.connect(self.DB_PATH)
+            self._local.connection.row_factory = sqlite3.Row
+            self._local.connection.execute("PRAGMA foreign_keys = ON")
+        return self._local.connection
 
     def get_user(self, username: str):
-        return self._connection.execute(
+        return self._get_connection().execute(
             "SELECT * FROM users WHERE username = ?", (username,)
         ).fetchone()
 
     def create_user(self, username: str, hashed_password: str):
         try:
-            with self._lock:
-                self._connection.execute(
-                    "INSERT INTO users (username, hashed_password) VALUES (?, ?)",
-                    (username, hashed_password)
-                )
-                self._connection.commit()
+            self._get_connection().execute(
+                "INSERT INTO users (username, hashed_password) VALUES (?, ?)",
+                (username, hashed_password)
+            )
+            self._get_connection().commit()
             return True
         except sqlite3.IntegrityError as e:
             print(f"DB error: {e}")
             return False
 
     def get_group(self, group_name: str):
-        return self._connection.execute(
+        return self._get_connection().execute(
             "SELECT * FROM chat_groups WHERE group_name = ?", (group_name,)
         ).fetchone()
 
     def create_group(self, group_name: str, owner: str):
         try:
-            with self._lock:
-                user_check = self._connection.execute(
-                "SELECT * FROM users WHERE username = ?", (owner,)
-                ).fetchone()
-                print(f"Owner in DB at insert time: {dict(user_check) if user_check else 'NOT FOUND'}")
-    
-                self._connection.execute("PRAGMA defer_foreign_keys = ON")
-                self._connection.execute(
-                    "INSERT INTO chat_groups (group_name, owner) VALUES (?, ?)",
-                    (group_name, owner)
-                )
-                self._connection.execute(
-                    "INSERT INTO group_members (group_name, username) VALUES (?, ?)",
-                    (group_name, owner)
-                )
-                self._connection.commit()
+            self._get_connection().execute("PRAGMA defer_foreign_keys = ON")
+            self._get_connection().execute(
+                "INSERT INTO chat_groups (group_name, owner) VALUES (?, ?)",
+                (group_name, owner)
+            )
+            self._get_connection().execute(
+                "INSERT INTO group_members (group_name, username) VALUES (?, ?)",
+                (group_name, owner)
+            )
+            self._get_connection().commit()
             return True
         except sqlite3.IntegrityError as e:
             print(f"DB error: {e}")
             return False
 
     def get_group_members(self, group_name: str):
-        return self._connection.execute(
+        return self._get_connection().execute(
             "SELECT username FROM group_members WHERE group_name = ?", (group_name,)
         ).fetchall()
 
     def add_group_member(self, group_name: str, username: str):
         try:
-            with self._lock:
-                self._connection.execute(
-                    "INSERT INTO group_members (group_name, username) VALUES (?, ?)",
-                    (group_name, username)
-                )
-                self._connection.commit()
+            self._get_connection().execute(
+                "INSERT INTO group_members (group_name, username) VALUES (?, ?)",
+                (group_name, username)
+            )
+            self._get_connection().commit()
             return True
         except sqlite3.IntegrityError as e:
             print(f"DB error: {e}")
@@ -114,19 +118,18 @@ class Database:
 
     def store_offline_message(self, msg_id: str, sender: str, chat_id: str, content: str, timestamp: str):
         try:
-            with self._lock:
-                self._connection.execute(
-                    "INSERT INTO offline_messages (msg_id, sender, chat_id, content, timestamp) VALUES (?, ?, ?, ?, ?)",
-                    (msg_id, sender, chat_id, content, timestamp)
-                )
-                self._connection.commit()
+            self._get_connection().execute(
+                "INSERT INTO offline_messages (msg_id, sender, chat_id, content, timestamp) VALUES (?, ?, ?, ?, ?)",
+                (msg_id, sender, chat_id, content, timestamp)
+            )
+            self._get_connection().commit()
             return True
         except sqlite3.IntegrityError as e:
             print(f"DB error: {e}")
             return False
 
     def get_offline_messages(self, username: str):
-        return self._connection.execute(
+        return self._get_connection().execute(
             "SELECT * FROM offline_messages WHERE chat_id = ?", (username,)
         ).fetchall()
 
