@@ -1,5 +1,7 @@
 from threading import Thread, Event
 from hashlib import sha256
+import os
+import json
 
 class Terminal:
 
@@ -13,7 +15,7 @@ class Terminal:
             "1": self.view_groups,
             "2": self.create_group,
             "3": self.join_group,
-            "4": self.message
+            "4": self.share_media
 
         }
         self.on_user_input = None
@@ -60,7 +62,7 @@ class Terminal:
         print("1. View Groups")
         print("2. Create Group")
         print("3. Join Group")
-        print("4. Message")
+        print("4. Share media with Friend")
         print("5. Logout")
 
     def login(self):
@@ -126,12 +128,29 @@ class Terminal:
             "message_name": "GROUP_LIST"
         })
     
-    def media_share(self, peer):
-        peer = input("Enter name of recepient:\n> ")
+    def share_media(self):
+        # A client must make a request before sending media
+        recipient = input("Enter name of recepient:\n> ")
+        filepath = input("Enter file path:\n> ")
+        filename = os.path.basename(filepath)
+        filesize = os.path.getSize(filepath)
+
+        # Create media request payload
+        media_request = {
+        'type': 'MEDIA_REQUEST',
+        'filename': filename,
+        'filesize': filesize,
+        'sender': self.client.username
+        }
+
+
         self.on_user_input({
-            "message_name": "MEDIA_REQUEST",
+            "message_name": "MEDIA_REQUEST_MESSAGE",
             "data": {
-                     "to": peer
+                     "msg_type": "media", # to seperate whether we are dealing with text/media
+                     "chat_id": recipient,
+                     "chat_type": "private",
+                     "text": json.dump(media_request)
                      }
         })
 

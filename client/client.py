@@ -35,7 +35,9 @@ class Client:
             case "JOIN_GROUP":
                 self.protocol.JOIN_GROUP(self.connection, input["data"]["group_name"])
             case "GROUP_LIST":
-                self.protocol.GROUP_LIST(self.connection)
+                self.protocol.GROUP_LIST(self.connection)            
+            case "MEDIA_REQUEST_MESSAGE":
+                self.protocol.MSG(self.connection, input["data"]["chat_id"], input["data"]["chat_type"], input["data"]["msg_type"], input["data"]["text"],)
             case _:
                 pass
 

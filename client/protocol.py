@@ -155,13 +155,13 @@ class Protocol:
             }
         })
 
-    def MSG(self, connection, chat_id, chat_type, text):
+    def MSG(self, connection, chat_id, chat_type, msg_type, text):
         msg_id = f"msg_{int(time.time())}"
         timestamp = time.time()
         
         connection.sendJson({
             "message_name": "MSG",
-            "type": "DATA",
+            "type": msg_type,
             "from": self.client.username,
             "chat_id": chat_id,
             "chat_type": chat_type,
