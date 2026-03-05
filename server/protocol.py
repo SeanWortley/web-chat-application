@@ -201,10 +201,11 @@ class Protocol:
             if recipient_conn:
                 # if the useer is connected this means their  onlinne, therefore we'll continue with the process of sending them the text
                 self.forward_message(recipient_conn, from_user, chat_id, "private", msg_id, timestamp, payload)
-                self.MSG_DELIVERED(connection, msg_id, [recipient])
+                #self.MSG_DELIVERED(connection, msg_id, [recipient])
             else:
+                pass
                 # if the user is offline, we'll just store their message
-                self.MSG_STORED(connection, msg_id, [recipient])
+                #self.MSG_STORED(connection, msg_id, [recipient])
                 
         elif chat_type == "group":
             # need to check if group exists, if it does we'll continue to send the message with recepient being all the memebers in the group (list)
@@ -228,7 +229,8 @@ class Protocol:
                         recipients.append(member)
             
             if recipients:
-                self.MSG_DELIVERED(connection, msg_id, recipients)
+                #self.MSG_DELIVERED(connection, msg_id, recipients)
+                pass
 
     def handle_CREATE_GROUP(self, connection, message):
         print(f"handle_CREATE_GROUP called with: {message}")

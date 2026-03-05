@@ -70,14 +70,14 @@ class Terminal:
         from_user = data.get("from")
 
         if from_user == self.current_chat:
-            print(f'{from_user}:    {data.get("payload")}')
+            print(f'\n{from_user}: {data.get("payload")}\n>> ', end="")
 
     def start_private_chat(self):
         recipient = input("Who would you like to chat with?\n> ")
         self.current_chat = recipient
 
-        text = input("> ")
-        while input != "":
+        text = input(">> ")
+        while text != "/quit":
             self.on_user_input({
                 "message_name": "MSG",
                 "data": {
@@ -86,7 +86,8 @@ class Terminal:
                     "payload": text
                 }
             })
-            text = input("> ")
+            text = input(">> ")
+        
 
     def start_group_chat(self):
         pass
