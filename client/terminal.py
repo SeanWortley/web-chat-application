@@ -9,15 +9,13 @@ class Terminal:
             "/login": self.login,
             "/register": self.register,
             "/logout": self.logout,
-            "/quit": self.quit,
-            "1": self.view_groups,
-            "2": self.create_group,
-            "3": self.join_group
-
+            "2": self.create_group, 
+            "/msg": self.send_message,
         }
         self.on_user_input = None
         self.wait_event = Event()
         self.running = True
+        self.logged_in = False
 
     def start(self):
         print("Welcome to the terminal interface for our chat application!")
@@ -27,14 +25,28 @@ class Terminal:
 
     def input_loop(self):
         while self.running:
-            text = input("> ")
+            text = input("> ").strip()
 
-            if text == "/help":
-                self.displayHelp # Prevents the terminal for waiting for server resonse, when /help does not call the server
-
-            # Terminal waits for protocol.py handle_incoming to call resume() before continuing the input loop
+            if text.startswith("/msg "):
+                parts = text[5:].split(maxsplit=1)  
+                if len(parts) == 2:
+                    recipient, message = parts
+                    self.send_message(recipient, message)  
+                else:
+                    print("Usage: /msg username message")
+            elif text == "1":
+                self.view_groups()
+            elif text == "2":
+                self.create_group()
+            elif text == "3":
+                self.join_group()
+            elif text == "4":
+                self.message_friend()  # You need to add this!
+            elif text == "5":
+                self.logout()
+            
             elif text in self.commands:
-                command = self.commands.get(text) 
+                command = self.commands.get(text)
                 self.wait_event.clear()
                 command()
                 self.wait_event.wait()
@@ -125,4 +137,20 @@ class Terminal:
 
     def display(self, text): # Will have to be adapted once GUI is added.
         print(text)
+
+    def send_message(self, recipient, message):
+        print(f"send_message called, logged_in={self.logged_in}")
+        if not self.logged_in:
+            print("You must be logged in first")
+            return
+            
+        self.on_user_input({
+            "message_name": "MSG",
+            "data": {
+                "chat_id": recipient,
+                "chat_type": "private",
+                "payload": message
+            }
+        })
+        print(f"Message sent to {recipient}")
         
