@@ -74,11 +74,11 @@ class Protocol:
                 "msg_id": row["msg_id"],
                 "sender": row["sender"],
                 "chat_type": row["chat_type"],
-                "content": row["content"],
+                "content": row["msg_text"],
                 "timestamp": row["timestamp"]
             })
             
-        self.UNSENT_MESSAGES(self, connection, groups)
+        self.UNSENT_MESSAGES(connection, groups)
 
         self.server.database.delete_offline_messages(username)
     

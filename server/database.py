@@ -143,9 +143,16 @@ class Database:
             return False
 
     def get_offline_messages(self, username: str):
-        return self._get_connection().execute(
-            "SELECT * FROM offline_messages WHERE chat_id = ? ORDER BY timestamp ASC", (username,)
-        ).fetchall()
+        return self._get_connection().execute("""
+            SELECT om.* FROM offline_messages om
+            WHERE om.chat_id = ?
+            OR (om.chat_type = 'group' AND EXISTS (
+                SELECT 1 FROM group_members gm 
+                WHERE gm.group_name = om.chat_id 
+                AND gm.username = ?
+            ))
+            ORDER BY om.timestamp ASC
+            """, (username, username)).fetchall()
     
     def delete_offline_messages(self, username):
         self._get_connection().execute(

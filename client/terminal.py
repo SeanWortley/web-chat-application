@@ -76,7 +76,7 @@ class Terminal:
     def process_unsent_batch(self, groups):
         for chat_id, messages in groups.items():
             num = len(messages)
-            self.client.interface.display(f"[{num}] UNREAD MESSAGE(S) FROM {chat_id}.upper()")
+            print(f"\n[{num}] UNREAD MESSAGE(S) FROM {chat_id.upper()}")
 
             for message in messages:
                 standard_form = {
