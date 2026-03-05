@@ -73,6 +73,23 @@ class Terminal:
             else:
                 print("Invalid command. Try /help")
 
+    def process_unsent_batch(self, groups):
+        for chat_id, messages in groups.items():
+            num = len(messages)
+            self.client.interface.display(f"[{num}] UNREAD MESSAGE(S) FROM {chat_id}.upper()")
+
+            for message in messages:
+                standard_form = {
+                    "data": {
+                        "from": message["sender"],
+                        "chat_id": chat_id,
+                        "chat_type": message["chat_type"],
+                        "payload": message["content"],
+                        "timestamp": message["timestamp"]
+                    }
+                }
+                self.queue_msg(standard_form)
+
     def process_msg(self, message, channel):
         if channel == self.current_chat:
             self.print_msg(message)

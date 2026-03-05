@@ -11,7 +11,8 @@ class Protocol:
             "MSG": self.handle_MSG,
             "CREATE_GROUP": self.handle_CREATE_GROUP,
             "JOIN_GROUP": self.handle_JOIN_GROUP,
-            "GROUP_LIST": self.handle_GROUP_LIST
+            "GROUP_LIST": self.handle_GROUP_LIST,
+            "REQUEST_UNSENT_MESSAGES": self.handle_REQUEST_UNSENT_MESSAGES
         }
     
     def handleIncoming(self, connection, clientMessage):
@@ -52,6 +53,42 @@ class Protocol:
         connection.authenticated = False
         connection.loggedInAs = None
         self.LOGOUT_ACK(connection, username)
+
+    def handle_REQUEST_UNSENT_MESSAGES(self, connection, message):
+        if not connection.authenticated:
+            return
+        
+        username = connection.loggedInAs
+        messages = self.server.database.get_offline_messages(username)
+
+        if not messages:
+            return
+        
+        groups = {}
+
+        for row in messages:
+            key = row["sender"] if row["chat_type"] == "private" else row["chat_id"]
+            if key not in groups:
+                groups[key] = []
+            groups[key].append({
+                "msg_id": row["msg_id"],
+                "sender": row["sender"],
+                "chat_type": row["chat_type"],
+                "content": row["content"],
+                "timestamp": row["timestamp"]
+            })
+            
+        self.UNSENT_MESSAGES(self, connection, groups)
+
+        self.server.database.delete_offline_messages(username)
+    
+    def UNSENT_MESSAGES(self, connection, groups):
+        connection.sendJson({
+            "message_name": "UNSENT_MESSAGES",
+            "data": {
+                "groups": groups
+            }
+        })
 
     def AUTH_OK(self, connection):
         welcome_message = f'Welcome back, {connection.loggedInAs}!'
@@ -206,8 +243,7 @@ class Protocol:
                 self.forward_message(recipient_conn, from_user, chat_id, "private", msg_id, timestamp, payload)
                 #self.MSG_DELIVERED(connection, msg_id, [recipient])
             else:
-                self.server.database.store_offline_message(msg_id, from_user, chat_id, payload, timestamp)
-
+                self.server.database.store_offline_message(msg_id, from_user, chat_id, chat_type, payload, timestamp)
                 # if the user is offline, we'll just store their message
                 #self.MSG_STORED(connection, msg_id, [recipient])
                 
@@ -237,7 +273,7 @@ class Protocol:
                         self.forward_message(member_conn, from_user, group_name, "group", msg_id, timestamp, payload)
 
                     else:
-                        self.server.database.store_offline_message(msg_id, from_user, member, payload, timestamp)
+                        self.server.database.store_offline_message(msg_id, from_user, chat_id, chat_type, payload, timestamp)
 
             """
             if recipients:

@@ -16,6 +16,7 @@ class Protocol:
             "LOGOUT_ACK": self.handle_LOGOUT_ACK,
             "MSG": self.handle_MSG,  
             "MSG_DELIVERED": self.handle_MSG_DELIVERED,
+            "UNSENT_MESSAGES": self.handle_UNSENT_MESSAGES
         }
 
     def handleIncoming(self, connection, serverMessage):
@@ -35,6 +36,7 @@ class Protocol:
         self.client.username = message.get("from")
 
         self.client.interface.display(message["data"]["welcome_message"])
+        self.REQUEST_UNSENT_MESSAGES(connection)
         self.client.interface.show_logged_in_menu()
         self.client.interface.resume()
     
@@ -194,6 +196,16 @@ class Protocol:
         elif chat_type == "group":
             self.client.interface.display(f"\n[{chat_id}] {from_user}: {payload}")
         """
+
+    def REQUEST_UNSENT_MESSAGES(self, connection):
+        connection.sendJson({
+            "message_name": "REQUEST_UNSENT_MESSAGES",
+        })
+    
+    def handle_UNSENT_MESSAGES(self, connection, message):
+        groups = message["data"]["groups"]
+        self.client.interface.process_unsent_batch(groups)
+
 
     def handle_MSG_DELIVERED(self, connection, message):
     #Show message delivery confirmation
