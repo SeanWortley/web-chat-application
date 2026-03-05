@@ -38,7 +38,8 @@ class Database:
             msg_id      TEXT    NOT NULL,
             sender      TEXT    NOT NULL,
             chat_id     TEXT    NOT NULL,
-            chat_type   TEXT    NOT NULL,
+            chat_type   TEXT    NOT NULL,        
+            group_id    TEXT,
             msg_text    TEXT    NOT NULL,
             timestamp   TEXT    NOT NULL,
             PRIMARY KEY (msg_id, chat_id),
@@ -130,11 +131,11 @@ class Database:
         )
         return result.fetchall()
 
-    def store_offline_message(self, msg_id: str, sender: str, chat_id: str, chat_type: str, msg_text: str, timestamp: str):
+    def store_offline_message(self, msg_id, sender, chat_id, chat_type, group_id=None, msg_text="", timestamp=""):
         try:
             self._get_connection().execute(
-                "INSERT INTO offline_messages (msg_id, sender, chat_id, chat_type, msg_text, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
-                (msg_id, sender, chat_id, chat_type, msg_text, timestamp)
+                "INSERT INTO offline_messages (msg_id, sender, chat_id, chat_type, group_id, msg_text, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (msg_id, sender, chat_id, chat_type, group_id, msg_text, timestamp)
             )
             self._get_connection().commit()
             return True

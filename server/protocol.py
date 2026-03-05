@@ -67,7 +67,8 @@ class Protocol:
         groups = {}
 
         for row in messages:
-            key = row["sender"] if row["chat_type"] == "private" else row["chat_id"]
+            key = row["group_id"] if row["chat_type"] == "group" else row["sender"]
+            
             if key not in groups:
                 groups[key] = []
             groups[key].append({
@@ -243,7 +244,9 @@ class Protocol:
                 self.forward_message(recipient_conn, from_user, chat_id, "private", msg_id, timestamp, payload)
                 #self.MSG_DELIVERED(connection, msg_id, [recipient])
             else:
-                self.server.database.store_offline_message(msg_id, from_user, chat_id, chat_type, payload, timestamp)
+                self.server.database.store_offline_message(msg_id, from_user, chat_id, chat_type, None, payload, timestamp)
+
+
                 # if the user is offline, we'll just store their message
                 #self.MSG_STORED(connection, msg_id, [recipient])
                 
@@ -273,7 +276,7 @@ class Protocol:
                         self.forward_message(member_conn, from_user, group_name, "group", msg_id, timestamp, payload)
 
                     else:
-                        self.server.database.store_offline_message(msg_id, from_user, chat_id, chat_type, payload, timestamp)
+                        self.server.database.store_offline_message(msg_id, from_user, member, chat_type, group_name, payload, timestamp)
 
             """
             if recipients:
