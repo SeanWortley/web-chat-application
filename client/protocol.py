@@ -182,8 +182,8 @@ class Protocol:
         content = json.loads(payload)
         msg_type = content.get('type')
         
-        if msg_type == 'MEDIA_REQUEST':
-            self.handle_media_request(sender, content)
+        if msg_type == 'MEDIA_OFFER':
+            self.handle_handle_media_offer(sender, content)
             
         elif msg_type == 'MEDIA_RESPONSE':
             self.handle_media_response(sender, content)
@@ -195,8 +195,8 @@ class Protocol:
         else:
             print(f" {sender}: {payload}")
 
-    def handle_media_request(self, sender, content):
-        self.client.interface.display(f"{sender} wants to send you {content["data"]["text"]["filename"]}")
+    def handle_media_offer(self, sender, content):
+        self.client.interface.display(f"{sender} wants to send you {content["filename"]}")
 
     def handle_media_response():
         pass

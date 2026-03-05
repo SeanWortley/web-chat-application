@@ -136,7 +136,7 @@ class Terminal:
         filesize = os.path.getSize(filepath)
 
         # Create media request payload
-        media_request = {
+        media_offer = {
         'type': 'MEDIA_REQUEST',
         'filename': filename,
         'filesize': filesize,
@@ -147,12 +147,10 @@ class Terminal:
 
         self.on_user_input({
             "message_name": "MSG",
-            "data": {
-                     "msg_type": "media", # to seperate whether we are dealing with text/media
-                     "chat_id": recipient,
-                     "chat_type": "private",
-                     "text": json.dump(media_request)
-                     }
+            "msg_type": "media", # to seperate whether we are dealing with text/media
+            "chat_id": recipient,
+            "chat_type": "private",
+            "payload": json.dump(media_offer)
         })
 
 
