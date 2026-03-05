@@ -33,6 +33,14 @@ class Terminal:
             if text == "/help":
                 self.displayHelp # Prevents the terminal for waiting for server resonse, when /help does not call the server
 
+            if text.startswith("/msg "):
+                parts = text[5:].split(maxsplit=1)  
+                if len(parts) == 2:
+                    recipient, message = parts
+                    self.send_message(recipient, message)  
+                else:
+                    print("Usage: /msg username message")
+
             # Terminal waits for protocol.py handle_incoming to call resume() before continuing the input loop
             elif text in self.commands:
                 command = self.commands.get(text) 
