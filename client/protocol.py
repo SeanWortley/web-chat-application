@@ -155,16 +155,19 @@ class Protocol:
         
         connection.sendJson({
             "message_name": "MSG",
-            "type": msg_type,
-            "from": self.client.username,
-            "chat_id": chat_id,
-            "chat_type": chat_type,
-            "msg_id": msg_id,
-            "timestamp": timestamp,
-            "payload": text
+            "data": 
+            {
+                "type": msg_type,
+                "from": self.client.username,
+                "chat_id": chat_id,
+                "chat_type": chat_type,
+                "msg_id": msg_id,
+                "timestamp": timestamp,
+                "payload": text
+            }
         })
 
-    def handle_incoming_message(self, msg):
+    def handle_incoming_message(self,connection, msg):
         sender = msg.get('from')
         payload = msg.get('payload', '')
 
@@ -174,7 +177,7 @@ class Protocol:
         msg_type = content.get('type')
         
         if msg_type == 'MEDIA_OFFER':
-            self.handle_handle_media_offer(sender, content)
+            self.handle_media_offer(sender, content)
             
         elif msg_type == 'MEDIA_RESPONSE':
             self.handle_media_response(sender, content)
@@ -185,6 +188,15 @@ class Protocol:
         # Text stuff
         else:
             print(f" {sender}: {payload}")
+    
+    def handle_media_offer(self, sender, content):
+        self.client.interface.display(f"{sender} wants to send you {content["filename"]}")
+
+    def handle_media_response():
+        pass
+
+    def handle_media_complete():
+        pass
 
             
     def handle_MSG(self, connection, message):
@@ -207,15 +219,6 @@ class Protocol:
         msg_id = data.get("message_id")
         recipients = data.get("recipients", [])
         self.client.interface.display(f"✓ Message delivered to: {', '.join(recipients)}")
-    
 
-    def handle_media_offer(self, sender, content):
-        self.client.interface.display(f"{sender} wants to send you {content["filename"]}")
-
-    def handle_media_response():
-        pass
-
-    def handle_media_complete():
-        pass
 
 

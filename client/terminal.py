@@ -174,10 +174,12 @@ class Terminal:
 
         self.on_user_input({
             "message_name": "MSG",
-            "msg_type": "media", # to seperate whether we are dealing with text/media
-            "chat_id": recipient,
-            "chat_type": "private",
-            "payload": json.dump(media_offer)
+            "data": {  
+                "msg_type": "media", # to seperate whether we are dealing with text/media
+                "chat_id": recipient,
+                "chat_type": "private",
+                "payload": json.dump(media_offer)
+            }
         })
 
 
