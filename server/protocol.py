@@ -58,6 +58,7 @@ class Protocol:
 
         connection.sendJson({
             "message_name": "AUTH_OK", 
+            "from": connection.loggedInAs,
             "data": {
                 "welcome_message": welcome_message}
                 })
@@ -75,6 +76,7 @@ class Protocol:
 
         connection.sendJson({
             "message_name": "CREATE_ACCOUNT_OK",
+            "from": connection.loggedInAs, 
             "data": {
                 "welcome_message": welcome_message}
         })
