@@ -10,11 +10,12 @@ class Terminal:
             "/register": self.register,
             "/logout": self.logout,
             "/quit": self.quit,
+            "/msg": self.send_message,
             "1": self.view_groups,
             "2": self.create_group,
             "3": self.join_group
-
         }
+        
         self.on_user_input = None
         self.wait_event = Event()
         self.running = True
@@ -127,4 +128,20 @@ class Terminal:
 
     def display(self, text): # Will have to be adapted once GUI is added.
         print(text)
+
+    def send_message(self, recipient, message):
+        print(f"send_message called, logged_in={self.logged_in}")
+        if not self.logged_in:
+            print("You must be logged in first")
+            return
+            
+        self.on_user_input({
+            "message_name": "MSG",
+            "data": {
+                "chat_id": recipient,
+                "chat_type": "private",
+                "payload": message
+            }
+        })
+        print(f"Message sent to {recipient}")
         
