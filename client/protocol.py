@@ -1,5 +1,6 @@
 from hashlib import sha256
 import time
+from tokenize import group
 
 class Protocol:
     def __init__(self, client):
@@ -9,7 +10,9 @@ class Protocol:
             "AUTH_FAIL": self.handle_AUTH_FAIL,
             "CREATE_ACCOUNT_OK": self.handle_CREATE_ACCOUNT_OK,
             "CREATE_ACCOUNT_FAIL": self.handle_CREATE_ACCOUNT_FAIL,
-           # "CREATE_GROUP_ACK": self.handle_CREATE_GROUP_ACK,
+            "CREATE_GROUP_ACK": self.handle_CREATE_GROUP_ACK,
+            "GROUP_LIST_ACK": self.handle_GROUP_LIST_ACK,
+            "JOIN_GROUP_ACK": self.handle_JOIN_GROUP_ACK,
             "LOGOUT_ACK": self.handle_LOGOUT_ACK,
             "MSG": self.handle_MSG,  
             "MSG_DELIVERED": self.handle_MSG_DELIVERED,
@@ -32,23 +35,60 @@ class Protocol:
 
         self.client.interface.display(message["data"]["welcome_message"])
         self.client.interface.show_logged_in_menu()
+        self.client.interface.resume()
     
     def handle_AUTH_FAIL(self, connection, message):
         self.client.interface.display(f"Failed to authenticate: {message["data"]["error_code"]}")
+        self.client.interface.show_logged_out_menu()
+        self.client.interface.resume()
 
     def handle_CREATE_ACCOUNT_OK(self, connection, message):
         self.client.interface.display(message["data"]["welcome_message"])
         self.client.interface.logged_in = True
         self.client.username = message.get("from")
         self.client.interface.show_logged_in_menu()
+        self.client.interface.resume()
 
     def handle_CREATE_ACCOUNT_FAIL(self, connection, message):
         self.client.interface.display(message["data"]["error_message"])
+        self.client.interface.show_logged_out_menu()
+        self.client.interface.resume()
 
     def handle_LOGOUT_ACK(self, connection, message):
         self.client.interface.display(message["data"]["goodbye_message"])
         self.client.authenticated = False
         self.client.loggedInAs = None
+        self.client.interface.show_logged_out_menu()
+        self.client.interface.resume()
+
+    def handle_CREATE_GROUP_ACK(self, connection, message):
+        result =  message["data"]["result"]
+        if result == "success":
+            self.client.interface.display(f'Group creation successful!\n{message["data"]["message"]}')
+        else:
+            self.client.interface.display(f'Group creation unsuccessful!\n{message["data"]["message"]}')
+        self.client.interface.resume()
+
+    def handle_JOIN_GROUP_ACK(self, connection, message):
+        result = message["data"]["result"]
+        if result == "success":
+            self.client.interface.display(f'Successfully joined this group!\n{message["data"]["message"]}')
+        else:
+            self.client.interface.display(f'You weren\'t able to join this group!\n{message["data"]["message"]}')
+        self.client.interface.resume()
+
+    def handle_GROUP_LIST_ACK(self, connection, message):
+        result = message["data"]["result"]
+        if result == "fail":
+            self.client.interface.display(message["data"]["message"])
+        else:
+            groups = message["data"]["groups"]
+            if groups:
+                for i in groups:
+                    self.client.interface.display(i)
+            else:
+                self.client.interface.display("You do not belong to any groups")
+        self.client.interface.resume()
 
     def AUTH(self, connection, username, hashed_pword):
         connection.sendJson({
@@ -67,12 +107,13 @@ class Protocol:
                 "hashed_password": hashed_pword
             }
         })
+
     def LOGOUT(self, connection):
         connection.sendJson({
             "message_name": "LOGOUT"
         })
 
-    def LOGOUT(self, connection):
+    def CREATE_GROUP(self, connection, group_name):
         connection.sendJson({
             "message_name": "CREATE_GROUP",
             "data":
@@ -89,30 +130,21 @@ class Protocol:
                 "group_name": group_name
             }
         })
-
-    def CREATE_GROUP(self, connection, group_name):
+    
+    def GROUP_LIST(self, connection):
         connection.sendJson({
-            "message_name": "CREATE_GROUP",
-            "type": "COMMAND",
-            "group_name": group_name
+            "message_name": "GROUP_LIST"
         })
-        print(f"Requesting to create group: {group_name}")
 
-    def JOIN_GROUP(self, connection, group_name):
-        connection.sendJson({
-            "message_name": "JOIN_GROUP",
-            "type": "COMMAND",
-            "group_name": group_name
-        })
-        print(f" Requesting to join group: {group_name}")
 
     def LEAVE_GROUP(self, connection, group_name):
         connection.sendJson({
             "message_name": "LEAVE_GROUP",
-            "type": "COMMAND",
-            "group_name": group_name
+            "data":
+            {
+                "group_name": group_name
+            }
         })
-        print(f"Requesting to leave group: {group_name}")
 
     def MSG(self, connection, chat_id, chat_type, text):
         msg_id = f"msg_{int(time.time())}"

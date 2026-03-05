@@ -11,6 +11,8 @@ class Terminal:
             "/logout": self.logout,
             "2": self.create_group, 
             "/msg": self.send_message,
+            "/quit": self.quit,
+
         }
         self.on_user_input = None
         self.wait_event = Event()
@@ -28,30 +30,40 @@ class Terminal:
             text = input("> ").strip()
 
             if text.startswith("/msg "):
-                parts = text[5:].split(maxsplit=1)  
+                parts = text[5:].split(maxsplit=1)
                 if len(parts) == 2:
                     recipient, message = parts
-                    self.send_message(recipient, message)  
+                    self.wait_event.clear()
+                    self.send_message(recipient, message)
+                    self.wait_event.wait()
                 else:
                     print("Usage: /msg username message")
             elif text == "1":
+                self.wait_event.clear()
                 self.view_groups()
+                self.wait_event.wait()
             elif text == "2":
+                self.wait_event.clear()
                 self.create_group()
+                self.wait_event.wait()
             elif text == "3":
+                self.wait_event.clear()
                 self.join_group()
+                self.wait_event.wait()
             elif text == "4":
-                self.private_message()  
+                self.wait_event.clear()
+                self.leave_group()
+                self.wait_event.wait()
             elif text == "5":
+                self.wait_event.clear()
                 self.logout()
-            
+                self.wait_event.wait()
             elif text in self.commands:
                 command = self.commands.get(text)
                 self.wait_event.clear()
                 command()
                 self.wait_event.wait()
-
-            else: 
+            else:
                 print("Invalid command. Try /help")
             
     def resume(self):
@@ -71,8 +83,7 @@ class Terminal:
         print("1. View Groups")
         print("2. Create Group")
         print("3. Join Group")
-        print("4. Message Friend")
-        print("5. Logout")
+        print("4. Leave Group")
 
     def login(self):
         username = input("Enter your username:\n> ")
@@ -135,6 +146,16 @@ class Terminal:
     def view_groups(self):
         self.on_user_input({
             "message_name": "GROUP_LIST"
+        })
+
+    def leave_group(self):
+        group_name = input("Enter the name of the group you'd like to leave:\n> ")
+
+        self.on_user_input({
+            "message_name": "LEAVE_GROUP",
+            "data": {
+                "group_name": group_name
+            }
         })
 
     def display(self, text): # Will have to be adapted once GUI is added.
