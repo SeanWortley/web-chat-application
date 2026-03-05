@@ -11,7 +11,8 @@ class Protocol:
             "MSG": self.handle_MSG,
             "CREATE_GROUP": self.handle_CREATE_GROUP,
             "JOIN_GROUP": self.handle_JOIN_GROUP,
-            "GROUP_LIST": self.handle_GROUP_LIST
+            "GROUP_LIST": self.handle_GROUP_LIST,
+            "REQUEST_UNSENT_MESSAGES": self.handle_REQUEST_UNSENT_MESSAGES
         }
     
     def handleIncoming(self, connection, clientMessage):
@@ -52,6 +53,43 @@ class Protocol:
         connection.authenticated = False
         connection.loggedInAs = None
         self.LOGOUT_ACK(connection, username)
+
+    def handle_REQUEST_UNSENT_MESSAGES(self, connection, message):
+        if not connection.authenticated:
+            return
+        
+        username = connection.loggedInAs
+        messages = self.server.database.get_offline_messages(username)
+
+        if not messages:
+            return
+        
+        groups = {}
+
+        for row in messages:
+            key = row["group_id"] if row["chat_type"] == "group" else row["sender"]
+            
+            if key not in groups:
+                groups[key] = []
+            groups[key].append({
+                "msg_id": row["msg_id"],
+                "sender": row["sender"],
+                "chat_type": row["chat_type"],
+                "content": row["msg_text"],
+                "timestamp": row["timestamp"]
+            })
+            
+        self.UNSENT_MESSAGES(connection, groups)
+
+        self.server.database.delete_offline_messages(username)
+    
+    def UNSENT_MESSAGES(self, connection, groups):
+        connection.sendJson({
+            "message_name": "UNSENT_MESSAGES",
+            "data": {
+                "groups": groups
+            }
+        })
 
     def AUTH_OK(self, connection):
         welcome_message = f'Welcome back, {connection.loggedInAs}!'
@@ -185,12 +223,14 @@ class Protocol:
             self.bad_request_error(connection, "User isn't connected")
             return
         
-        from_user = message.get("from")
-        chat_id = message.get("chat_id")  #eeither the username or the grp_id/name
-        chat_type = message.get("chat_type") 
-        msg_id = message.get("msg_id", "unknown")
-        timestamp = message.get("timestamp", "unknown")
-        payload = message.get("payload", "")
+        data = message.get("data")
+
+        from_user = data.get("from")
+        chat_id = data.get("chat_id")  #eeither the username or the grp_id/name
+        chat_type = data.get("chat_type") 
+        msg_id = data.get("msg_id", "unknown")
+        timestamp = data.get("timestamp", "unknown")
+        payload = data.get("payload", "")
         
         
         if chat_type == "private":
@@ -200,35 +240,49 @@ class Protocol:
             
             if recipient_conn:
                 # if the useer is connected this means their  onlinne, therefore we'll continue with the process of sending them the text
+                print(f"handle_MSG: from={from_user}, chat_id={chat_id}, chat_type={chat_type}, recipient_conn={recipient_conn}")
                 self.forward_message(recipient_conn, from_user, chat_id, "private", msg_id, timestamp, payload)
-                self.MSG_DELIVERED(connection, msg_id, [recipient])
+                #self.MSG_DELIVERED(connection, msg_id, [recipient])
             else:
+                self.server.database.store_offline_message(msg_id, from_user, chat_id, chat_type, None, payload, timestamp)
+
+
                 # if the user is offline, we'll just store their message
-                self.MSG_STORED(connection, msg_id, [recipient])
+                #self.MSG_STORED(connection, msg_id, [recipient])
                 
         elif chat_type == "group":
             # need to check if group exists, if it does we'll continue to send the message with recepient being all the memebers in the group (list)
             group_name = chat_id
             
-            if group_name not in self.server.groups:
+            if not self.server.database.get_group(group_name):
                 self.bad_request_error(connection, "Group doesn't exist")
                 return
             
-            if from_user not in self.server.groups[group_name]:
+            if not self.server.database.is_group_member(group_name, from_user):
                 self.bad_request_error(connection, "You're not in this group")
                 return
             
             # Process to send to all memebers in the group
-            recipients = []
-            for member in self.server.groups[group_name]:
+            members = self.server.database.get_group_members(group_name)
+            for row in members:
+                member = row["username"]
+
                 if member != from_user:
+
                     member_conn = self.get_user_connection(member)
+
                     if member_conn:
+                        print(f"handle_MSG: from={from_user}, chat_id={chat_id}, chat_type={chat_type}, member_conn={member_conn}")
                         self.forward_message(member_conn, from_user, group_name, "group", msg_id, timestamp, payload)
-                        recipients.append(member)
-            
+
+                    else:
+                        self.server.database.store_offline_message(msg_id, from_user, member, chat_type, group_name, payload, timestamp)
+
+            """
             if recipients:
-                self.MSG_DELIVERED(connection, msg_id, recipients)
+                #self.MSG_DELIVERED(connection, msg_id, recipients)
+                pass
+            """
 
     def handle_CREATE_GROUP(self, connection, message):
         print(f"handle_CREATE_GROUP called with: {message}")

@@ -16,9 +16,11 @@ class Protocol:
             "LOGOUT_ACK": self.handle_LOGOUT_ACK,
             "MSG": self.handle_MSG,  
             "MSG_DELIVERED": self.handle_MSG_DELIVERED,
+            "UNSENT_MESSAGES": self.handle_UNSENT_MESSAGES
         }
 
     def handleIncoming(self, connection, serverMessage):
+        #print(f"handleIncoming: {serverMessage}")
         messageName = serverMessage["message_name"]
         handler = self.handlers.get(messageName)
         if handler:
@@ -34,6 +36,7 @@ class Protocol:
         self.client.username = message.get("from")
 
         self.client.interface.display(message["data"]["welcome_message"])
+        self.REQUEST_UNSENT_MESSAGES(connection)
         self.client.interface.show_logged_in_menu()
         self.client.interface.resume()
     
@@ -152,28 +155,57 @@ class Protocol:
         
         connection.sendJson({
             "message_name": "MSG",
-            "type": "DATA",
-            "from": self.client.username,
-            "chat_id": chat_id,
-            "chat_type": chat_type,
-            "msg_id": msg_id,
-            "timestamp": timestamp,
-            "payload": text
+            "data": {
+                "type": "DATA",
+                "from": self.client.username,
+                "chat_id": chat_id,
+                "chat_type": chat_type,
+                "msg_id": msg_id,
+                "timestamp": timestamp,
+                "payload": text
+            }
+            
         })
+
 
     def handle_MSG(self, connection, message):
     #Display incoming message
-        print("Ekse, you have a new message coming through")
+        #print("Ekse, you have a new message coming through")
         data = message["data"]
         from_user = data.get("from")
         chat_id = data.get("chat_id")
         chat_type = data.get("chat_type")
         payload = data.get("payload")
 
+        #print(f"handle_MSG: from={from_user}, chat_id={chat_id}, chat_type={chat_type}, current_chat={self.client.interface.current_chat}")
+
+
+        if chat_type == "private":
+            channel = from_user
+        elif chat_type == "group":
+            channel = chat_id
+        else:
+            print("Unkown chat type:", chat_type)
+
+        #print(f"channel={channel}, current_chat={self.client.interface.current_chat}")
+        self.client.interface.process_msg(message, channel)
+
+        """
         if chat_type == "private":
             self.client.interface.display(f"\n[PM from {from_user}]: {payload}")
         elif chat_type == "group":
             self.client.interface.display(f"\n[{chat_id}] {from_user}: {payload}")
+        """
+
+    def REQUEST_UNSENT_MESSAGES(self, connection):
+        connection.sendJson({
+            "message_name": "REQUEST_UNSENT_MESSAGES",
+        })
+    
+    def handle_UNSENT_MESSAGES(self, connection, message):
+        groups = message["data"]["groups"]
+        self.client.interface.process_unsent_batch(groups)
+
 
     def handle_MSG_DELIVERED(self, connection, message):
     #Show message delivery confirmation

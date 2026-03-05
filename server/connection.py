@@ -18,6 +18,7 @@ class Connection:
                 if not data:
                     break
                 message = json.loads(data.decode())
+                print(message)
                 self.server.protocol.handleIncoming(self, message)
         
         except Exception as e:
@@ -29,4 +30,7 @@ class Connection:
         self.socket.send(encoded)
 
     def close(self):
+        print(f"CLOSING:{self.socket}, {self.loggedInAs}")
         self.socket.close()
+        if self in self.server.connections:
+            self.server.connections.remove(self)

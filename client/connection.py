@@ -31,4 +31,6 @@ class Connection:
 
     def close(self):
         if not self.socket._closed:
+            import traceback
+            traceback.print_stack()
             self.socket.close()

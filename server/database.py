@@ -38,7 +38,9 @@ class Database:
             msg_id      TEXT    NOT NULL,
             sender      TEXT    NOT NULL,
             chat_id     TEXT    NOT NULL,
-            content     TEXT    NOT NULL,
+            chat_type   TEXT    NOT NULL,        
+            group_id    TEXT,
+            msg_text    TEXT    NOT NULL,
             timestamp   TEXT    NOT NULL,
             PRIMARY KEY (msg_id, chat_id),
             FOREIGN KEY (sender) REFERENCES users(username)
@@ -80,6 +82,12 @@ class Database:
         return self._get_connection().execute(
             "SELECT * FROM chat_groups WHERE group_name = ?", (group_name,)
         ).fetchone()
+    
+    def get_group_members(self, group_name: str):
+        return self._get_connection().execute(
+            "SELECT username FROM group_members WHERE group_name = ?", (group_name,)
+        ).fetchall()
+
 
     def create_group(self, group_name: str, owner: str):
         try:
@@ -123,11 +131,11 @@ class Database:
         )
         return result.fetchall()
 
-    def store_offline_message(self, msg_id: str, sender: str, chat_id: str, content: str, timestamp: str):
+    def store_offline_message(self, msg_id, sender, chat_id, chat_type, group_id=None, msg_text="", timestamp=""):
         try:
             self._get_connection().execute(
-                "INSERT INTO offline_messages (msg_id, sender, chat_id, content, timestamp) VALUES (?, ?, ?, ?, ?)",
-                (msg_id, sender, chat_id, content, timestamp)
+                "INSERT INTO offline_messages (msg_id, sender, chat_id, chat_type, group_id, msg_text, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (msg_id, sender, chat_id, chat_type, group_id, msg_text, timestamp)
             )
             self._get_connection().commit()
             return True
@@ -136,9 +144,23 @@ class Database:
             return False
 
     def get_offline_messages(self, username: str):
-        return self._get_connection().execute(
-            "SELECT * FROM offline_messages WHERE chat_id = ?", (username,)
-        ).fetchall()
+        return self._get_connection().execute("""
+            SELECT om.* FROM offline_messages om
+            WHERE om.chat_id = ?
+            OR (om.chat_type = 'group' AND EXISTS (
+                SELECT 1 FROM group_members gm 
+                WHERE gm.group_name = om.chat_id 
+                AND gm.username = ?
+            ))
+            ORDER BY om.timestamp ASC
+            """, (username, username)).fetchall()
+    
+    def delete_offline_messages(self, username):
+        self._get_connection().execute(
+            "DELETE FROM offline_messages WHERE chat_id = ?", (username,)
+        )
+    
+        self._get_connection().commit()
 
     def validate_credentials(self, username: str, hashed_password: str):
         user = self.get_user(username)

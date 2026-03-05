@@ -1,5 +1,7 @@
 from threading import Thread, Event
 from hashlib import sha256
+from tokenize import group
+import queue
 
 class Terminal:
 
@@ -9,15 +11,19 @@ class Terminal:
             "/login": self.login,
             "/register": self.register,
             "/logout": self.logout,
-            "2": self.create_group, 
             "/msg": self.send_message,
             "/quit": self.quit,
-
+            "/current": self.print_current
         }
         self.on_user_input = None
         self.wait_event = Event()
         self.running = True
         self.logged_in = False
+        self.chatting_mode = False
+
+
+        self.unread_messages = {}
+        self.current_chat = None # Is either 'from' or 'group_name' depending on chat type
 
     def start(self):
         print("Welcome to the terminal interface for our chat application!")
@@ -38,26 +44,27 @@ class Terminal:
                     self.wait_event.wait()
                 else:
                     print("Usage: /msg username message")
-            elif text == "1":
+            elif text == "1": #Private chat
+                self.start_private_chat()
+                self.current_chat = None
+
+            elif text == "2": #Group chat
+                self.start_group_chat()
+                self.current_chat = None
+
+            elif text == "3":
                 self.wait_event.clear()
                 self.view_groups()
                 self.wait_event.wait()
-            elif text == "2":
+            elif text == "4":
                 self.wait_event.clear()
                 self.create_group()
                 self.wait_event.wait()
-            elif text == "3":
+            elif text == "5":
                 self.wait_event.clear()
                 self.join_group()
                 self.wait_event.wait()
-            elif text == "4":
-                self.wait_event.clear()
-                self.leave_group()
-                self.wait_event.wait()
-            elif text == "5":
-                self.wait_event.clear()
-                self.logout()
-                self.wait_event.wait()
+
             elif text in self.commands:
                 command = self.commands.get(text)
                 self.wait_event.clear()
@@ -65,11 +72,138 @@ class Terminal:
                 self.wait_event.wait()
             else:
                 print("Invalid command. Try /help")
+
+    def process_unsent_batch(self, groups):
+        for chat_id, messages in groups.items():
+            num = len(messages)
+            print(f"\n[{num}] UNREAD MESSAGE(S) FROM {chat_id.upper()}\n")
+
+            for message in messages:
+                standard_form = {
+                    "data": {
+                        "from": message["sender"],
+                        "chat_id": chat_id,
+                        "chat_type": message["chat_type"],
+                        "payload": message["content"],
+                        "timestamp": message["timestamp"]
+                    }
+                }
+                self.queue_msg(standard_form)
+
+    def process_msg(self, message, channel):
+        if channel == self.current_chat:
+            self.print_msg(message)
+        else:
+            self.queue_msg(message)
+            self.notify_msg(message)
+    
+    def process_unread_in_current_chat(self):
+        if self.current_chat not in self.unread_messages:
+            return
+        
+        q = self.unread_messages[self.current_chat]
+        while not q.empty():
+            message = q.get()
+            self.print_msg(message, True)
+        del self.unread_messages[self.current_chat]
+
+
+    def queue_msg(self, message):
+        data = message.get("data")
+        from_user = data.get("from")
+        chat_type = data.get("chat_type")
+        chat_id = data.get("chat_id")
+
+        # This just makes it match how we keep track of current_chat :)
+        if chat_type == "private":
+            key = from_user
+        else:
+            key = chat_id
+
+        if key in self.unread_messages:
+            self.unread_messages[key].put(message)
+
+        else:
+            unread_queue = queue.Queue()
+            unread_queue.put(message)
+            self.unread_messages[key] = unread_queue
+
+        
+    def notify_msg(self, message):
+        data = message.get("data")
+        from_user = data.get("from")
+        chat_type = data.get("chat_type")
+        chat_id = data.get("chat_id")
+
+        if chat_type == "private":
+            notification_message = f'\n[NEW PRIVATE MESSAGE FROM {from_user.upper()}]'
+        else:
+            notification_message = f'\n[NEW MESSAGE IN |{chat_id.upper()}| FROM {from_user.upper()}]'
+
+        if self.chatting_mode:
+            notification_message = f'{notification_message}\n>> '
+        else:
+            notification_message = f'{notification_message}\n> '
+
+
+        print(notification_message, end="")
+
+    
+    def print_msg(self, message, is_unread=False):
+        data = message.get("data")
+        from_user = data.get("from")
+        if is_unread:
+            print(f'{from_user}: {data.get("payload")}')
+        else:
+            print(f'\n{from_user}: {data.get("payload")}\n>> ', end="")
+
+    def start_private_chat(self):
+        recipient = input("Who would you like to chat with?\n> ")
+        self.current_chat = recipient
+
+        self.chatting_mode = True
+        self.process_unread_in_current_chat()
+        text = input(">> ")
+        while text != "/quit":
+            self.on_user_input({
+                "message_name": "MSG",
+                "data": {
+                    "chat_id": recipient,
+                    "chat_type": "private",
+                    "payload": text
+                }
+            })
+            text = input(">> ")
+        self.chatting_mode = False
+        self.show_logged_in_menu()
+        
+
+    def start_group_chat(self):
+        group = input("Which chat room would you like to enter?\n> ")
+        self.current_chat = group
+
+        self.chatting_mode = True
+        self.process_unread_in_current_chat()
+        text = input(">> ")
+        while text != "/quit":
+            self.on_user_input({
+                "message_name": "MSG",
+                "data": {
+                    "chat_id": group,
+                    "chat_type": "group",
+                    "payload": text
+                }
+            })
+            text = input(">> ")
+        self.chatting_mode = False
+        self.show_logged_in_menu()
+
             
     def resume(self):
         self.wait_event.set()
     
     def displayHelp(self):
+        self.resume()
         pass # Implement later
 
     def show_logged_out_menu(self):
@@ -80,10 +214,11 @@ class Terminal:
 
     def show_logged_in_menu(self):
         print("=== CHAT MENU ===")
-        print("1. View Groups")
-        print("2. Create Group")
-        print("3. Join Group")
-        print("4. Leave Group")
+        print("1. Enter Private Chat")
+        print("2. Enter Group Chat")
+        print("3. View Groups")
+        print("4. Create Group")
+        print("5. Join Group")
 
     def login(self):
         username = input("Enter your username:\n> ")
@@ -183,3 +318,6 @@ class Terminal:
         })
         print(f"Message sent to {recipient}")
         
+
+    def print_current(self):
+        print(f"Chatting with {self.current_chat}")
