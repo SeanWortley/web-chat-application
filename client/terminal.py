@@ -9,7 +9,6 @@ class Terminal:
             "/login": self.login,
             "/register": self.register,
             "/logout": self.logout,
-            "2": self.create_group, 
             "/msg": self.send_message,
             "/quit": self.quit,
 
@@ -38,26 +37,23 @@ class Terminal:
                     self.wait_event.wait()
                 else:
                     print("Usage: /msg username message")
-            elif text == "1":
+            elif text == "1": #Private chat
+                self.start_private_chat()
+            elif text == "2": #Group chat
+                self.start_group_chat()
+            elif text == "3":
                 self.wait_event.clear()
                 self.view_groups()
                 self.wait_event.wait()
-            elif text == "2":
+            elif text == "4":
                 self.wait_event.clear()
                 self.create_group()
                 self.wait_event.wait()
-            elif text == "3":
+            elif text == "5":
                 self.wait_event.clear()
                 self.join_group()
                 self.wait_event.wait()
-            elif text == "4":
-                self.wait_event.clear()
-                self.leave_group()
-                self.wait_event.wait()
-            elif text == "5":
-                self.wait_event.clear()
-                self.logout()
-                self.wait_event.wait()
+
             elif text in self.commands:
                 command = self.commands.get(text)
                 self.wait_event.clear()
@@ -65,11 +61,29 @@ class Terminal:
                 self.wait_event.wait()
             else:
                 print("Invalid command. Try /help")
+
+    def start_private_chat(self):
+        recipient = input("Who would you like to chat with?\n> ")
+
+        text = input("> ")
+        while input != "":
+            self.on_user_input({
+            "message_name": "MSG",
+            "data": {
+                "chat_id": recipient,
+                "chat_type": "private",
+                "payload": text
+            }
+        })
+
+    def start_group_chat(self):
+        pass
             
     def resume(self):
         self.wait_event.set()
     
     def displayHelp(self):
+        self.resume()
         pass # Implement later
 
     def show_logged_out_menu(self):
@@ -80,10 +94,11 @@ class Terminal:
 
     def show_logged_in_menu(self):
         print("=== CHAT MENU ===")
-        print("1. View Groups")
-        print("2. Create Group")
-        print("3. Join Group")
-        print("4. Leave Group")
+        print("1. Enter Private Chat")
+        print("2. Enter Group Chat")
+        print("3. View Groups")
+        print("4. Create Group")
+        print("5. Join Group")
 
     def login(self):
         username = input("Enter your username:\n> ")

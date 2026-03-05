@@ -161,6 +161,7 @@ class Protocol:
             "payload": text
         })
 
+
     def handle_MSG(self, connection, message):
     #Display incoming message
         print("Ekse, you have a new message coming through")
@@ -170,10 +171,12 @@ class Protocol:
         chat_type = data.get("chat_type")
         payload = data.get("payload")
 
+        """
         if chat_type == "private":
             self.client.interface.display(f"\n[PM from {from_user}]: {payload}")
         elif chat_type == "group":
             self.client.interface.display(f"\n[{chat_id}] {from_user}: {payload}")
+        """
 
     def handle_MSG_DELIVERED(self, connection, message):
     #Show message delivery confirmation
