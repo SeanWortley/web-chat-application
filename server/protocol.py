@@ -183,12 +183,13 @@ class Protocol:
             self.bad_request_error(connection, "User isn't connected")
             return
         
-        from_user = connection.loggedInAs
+        from_user = message.get("from")
         chat_id = message.get("chat_id")  #eeither the username or the grp_id/name
         chat_type = message.get("chat_type") 
         msg_id = message.get("msg_id", "unknown")
         timestamp = message.get("timestamp", "unknown")
         payload = message.get("payload", "")
+        
         
         if chat_type == "private":
             # we know it's a 1-to-1 chat therefore send to 1 person, get their dets
@@ -325,10 +326,12 @@ class Protocol:
             recipient_conn.sendJson({
             "message_name": "MSG",
             "type": "DATA",
+            "data": {
             "from": from_user,
             "chat_id": chat_id,
             "chat_type": chat_type,
             "msg_id": msg_id,
             "timestamp": timestamp,
             "payload": payload
+            }
     })

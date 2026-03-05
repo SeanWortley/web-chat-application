@@ -31,6 +31,7 @@ class Protocol:
         self.client.username = message.get("from")
 
         self.client.interface.display(message["data"]["welcome_message"])
+        self.client.interface.show_logged_in_menu()
     
     def handle_AUTH_FAIL(self, connection, message):
         self.client.interface.display(f"Failed to authenticate: {message["data"]["error_code"]}")
@@ -39,6 +40,7 @@ class Protocol:
         self.client.interface.display(message["data"]["welcome_message"])
         self.client.interface.logged_in = True
         self.client.username = message.get("from")
+        self.client.interface.show_logged_in_menu()
 
     def handle_CREATE_ACCOUNT_FAIL(self, connection, message):
         self.client.interface.display(message["data"]["error_message"])
@@ -129,12 +131,13 @@ class Protocol:
 
     def handle_MSG(self, connection, message):
     #Display incoming message
+        print("Ekse, you have a new message coming through")
         data = message["data"]
-        from_user = message.get("from")
+        from_user = data.get("from")
         chat_id = data.get("chat_id")
         chat_type = data.get("chat_type")
         payload = data.get("payload")
-    
+
         if chat_type == "private":
             self.client.interface.display(f"\n[PM from {from_user}]: {payload}")
         elif chat_type == "group":
