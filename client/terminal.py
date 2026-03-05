@@ -18,6 +18,8 @@ class Terminal:
         self.running = True
         self.logged_in = False
 
+        unseen_messages = []
+
     def start(self):
         print("Welcome to the terminal interface for our chat application!")
         print("To get started, type '/login', '/register', or '/help' for a list of commands.")
@@ -61,6 +63,9 @@ class Terminal:
                 self.wait_event.wait()
             else:
                 print("Invalid command. Try /help")
+
+    def process_msg(self):
+
 
     def start_private_chat(self):
         recipient = input("Who would you like to chat with?\n> ")

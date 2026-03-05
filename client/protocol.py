@@ -164,12 +164,14 @@ class Protocol:
 
     def handle_MSG(self, connection, message):
     #Display incoming message
-        print("Ekse, you have a new message coming through")
+        #print("Ekse, you have a new message coming through")
         data = message["data"]
         from_user = data.get("from")
         chat_id = data.get("chat_id")
         chat_type = data.get("chat_type")
         payload = data.get("payload")
+
+        self.client.process_msg(message)
 
         """
         if chat_type == "private":
