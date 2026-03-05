@@ -190,12 +190,13 @@ class Protocol:
             
         elif msg_type == 'MEDIA_COMPLETE':
             self.handle_media_complete(content)
-            
+
+        # Text stuff
         else:
             print(f" {sender}: {payload}")
 
-    def handle_media_request(sender, content):
-        pass
+    def handle_media_request(self, sender, content):
+        self.client.interface.display(f"{sender} wants to send you {content["data"]["text"]["filename"]}")
 
     def handle_media_response():
         pass

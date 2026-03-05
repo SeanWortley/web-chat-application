@@ -140,7 +140,8 @@ class Terminal:
         'type': 'MEDIA_REQUEST',
         'filename': filename,
         'filesize': filesize,
-        'sender': self.client.username
+        'sender': self.client.username,
+        #'sender_udp_port': 
         }
 
 
