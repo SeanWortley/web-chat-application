@@ -185,13 +185,13 @@ class Protocol:
         if not connection.authenticated:
             self.bad_request_error(connection, "User isn't connected")
             return
-        
-        from_user = message.get("from")
-        chat_id = message.get("chat_id")  #eeither the username or the grp_id/name
-        chat_type = message.get("chat_type") 
-        msg_id = message.get("msg_id", "unknown")
-        timestamp = message.get("timestamp", "unknown")
-        payload = message.get("payload", "")
+        data = message.get("data")
+        from_user = data.get("from")
+        chat_id = data.get("chat_id")  #eeither the username or the grp_id/name
+        chat_type = data.get("chat_type") 
+        msg_id = data.get("msg_id", "unknown")
+        timestamp = data.get("timestamp", "unknown")
+        payload = data.get("payload", "")
         
         
         if chat_type == "private":
@@ -328,7 +328,6 @@ class Protocol:
             #forarding of the message to correct recepient
             recipient_conn.sendJson({
             "message_name": "MSG",
-            "type": "DATA",
             "data": {
             "from": from_user,
             "chat_id": chat_id,

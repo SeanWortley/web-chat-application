@@ -21,11 +21,11 @@ class Protocol:
         }
 
     def handleIncoming(self, connection, serverMessage):
+        print("FUCKING SOMETHING HAPPENING")
         messageName = serverMessage["message_name"]
         handler = self.handlers.get(messageName)
         #if messageName == "MSG":
-        #    self.handle_incoming_message(serverMessage)
-        #elif handler:
+        #    self.handle_incoming_message(connection, serverMessage)
         if handler:
             handler(connection, serverMessage)
 
@@ -170,10 +170,12 @@ class Protocol:
 
     def handle_incoming_message(self,connection, msg):
         print("Incoming Ekse")
-        sender = msg.get('from')
-        payload = msg.get('payload', '')
+        data = msg.get("data")
 
-        print(f"\n[{self.username}] Message from {sender}:")
+        sender = data.get('from')
+        payload = data.get('payload', '')
+
+        print(f"\n[{self.client.username}] Message from {sender}:")
 
         content = json.loads(payload)
         msg_type = content.get('type')
@@ -218,6 +220,7 @@ class Protocol:
 
 
         if chat_type == "private":
+            print(payload)
             self.client.interface.display(f"\n[PM from {from_user}]: {payload}")
         elif chat_type == "group":
             self.client.interface.display(f"\n[{chat_id}] {from_user}: {payload}")
