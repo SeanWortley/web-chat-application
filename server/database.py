@@ -80,6 +80,12 @@ class Database:
         return self._get_connection().execute(
             "SELECT * FROM chat_groups WHERE group_name = ?", (group_name,)
         ).fetchone()
+    
+    def get_group_members(self, group_name: str):
+        return self._get_connection().execute(
+            "SELECT username FROM group_members WHERE group_name = ?", (group_name,)
+        ).fetchall()
+
 
     def create_group(self, group_name: str, owner: str):
         try:

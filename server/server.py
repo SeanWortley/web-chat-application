@@ -16,7 +16,7 @@ class Server:
         self.protocol = Protocol(self)
         self.database = Database()
         self.socket.listen()
-        self.groups = {}  # stores groups: {group_name: [username1, username2]}
+        #self.groups = {}  # stores groups: {group_name: [username1, username2]}
         self.connections = []  # track all active connections
 
     def listen(self):

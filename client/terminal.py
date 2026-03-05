@@ -1,5 +1,6 @@
 from threading import Thread, Event
 from hashlib import sha256
+from tokenize import group
 
 class Terminal:
 
@@ -42,8 +43,12 @@ class Terminal:
                     print("Usage: /msg username message")
             elif text == "1": #Private chat
                 self.start_private_chat()
+                self.current_chat = None
+
             elif text == "2": #Group chat
                 self.start_group_chat()
+                self.current_chat = None
+
             elif text == "3":
                 self.wait_event.clear()
                 self.view_groups()
@@ -67,10 +72,10 @@ class Terminal:
 
     def process_msg(self, message):
         data = message.get("data")
-        from_user = data.get("from")
+        chat_id = data.get("chat_id")
 
-        if from_user == self.current_chat:
-            print(f'\n{from_user}: {data.get("payload")}\n>> ', end="")
+        if chat_id == self.current_chat:
+            print(f'\n{chat_id}: {data.get("payload")}\n>> ', end="")
 
     def start_private_chat(self):
         recipient = input("Who would you like to chat with?\n> ")
@@ -87,10 +92,25 @@ class Terminal:
                 }
             })
             text = input(">> ")
+
         
 
     def start_group_chat(self):
-        pass
+        group = input("Which chat room would you like to join?\n> ")
+        self.current_chat = group
+
+        text = input(">> ")
+        while text != "/quit":
+            self.on_user_input({
+                "message_name": "MSG",
+                "data": {
+                    "chat_id": group,
+                    "chat_type": "group",
+                    "payload": text
+                }
+            })
+            text = input(">> ")
+
             
     def resume(self):
         self.wait_event.set()

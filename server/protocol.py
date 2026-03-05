@@ -204,6 +204,8 @@ class Protocol:
                 #self.MSG_DELIVERED(connection, msg_id, [recipient])
             else:
                 pass
+                self.server.database.store_offline_message(msg_id, from_user, chat_id, payload, timestamp)
+
                 # if the user is offline, we'll just store their message
                 #self.MSG_STORED(connection, msg_id, [recipient])
                 
@@ -211,26 +213,33 @@ class Protocol:
             # need to check if group exists, if it does we'll continue to send the message with recepient being all the memebers in the group (list)
             group_name = chat_id
             
-            if group_name not in self.server.groups:
+            if not self.server.database.get_group(group_name):
                 self.bad_request_error(connection, "Group doesn't exist")
                 return
             
-            if from_user not in self.server.groups[group_name]:
+            if not self.server.database.is_group_member(group_name, from_user):
                 self.bad_request_error(connection, "You're not in this group")
                 return
             
             # Process to send to all memebers in the group
-            recipients = []
-            for member in self.server.groups[group_name]:
+            members = self.server.database.get_group_members(group_name)
+            for row in members:
+                member = row["username"]
+
                 if member != from_user:
+
                     member_conn = self.get_user_connection(member)
+
                     if member_conn:
                         self.forward_message(member_conn, from_user, group_name, "group", msg_id, timestamp, payload)
-                        recipients.append(member)
-            
+                    else:
+                        self.server.database.store_offline_message(msg_id, from_user, member, payload, timestamp)
+
+            """
             if recipients:
                 #self.MSG_DELIVERED(connection, msg_id, recipients)
                 pass
+            """
 
     def handle_CREATE_GROUP(self, connection, message):
         print(f"handle_CREATE_GROUP called with: {message}")
