@@ -30,30 +30,40 @@ class Terminal:
             text = input("> ").strip()
 
             if text.startswith("/msg "):
-                parts = text[5:].split(maxsplit=1)  
+                parts = text[5:].split(maxsplit=1)
                 if len(parts) == 2:
                     recipient, message = parts
-                    self.send_message(recipient, message)  
+                    self.wait_event.clear()
+                    self.send_message(recipient, message)
+                    self.wait_event.wait()
                 else:
                     print("Usage: /msg username message")
             elif text == "1":
+                self.wait_event.clear()
                 self.view_groups()
+                self.wait_event.wait()
             elif text == "2":
+                self.wait_event.clear()
                 self.create_group()
+                self.wait_event.wait()
             elif text == "3":
+                self.wait_event.clear()
                 self.join_group()
+                self.wait_event.wait()
             elif text == "4":
-                self.private_message()  
+                self.wait_event.clear()
+                self.leave_group()
+                self.wait_event.wait()
             elif text == "5":
+                self.wait_event.clear()
                 self.logout()
-            
+                self.wait_event.wait()
             elif text in self.commands:
                 command = self.commands.get(text)
                 self.wait_event.clear()
                 command()
                 self.wait_event.wait()
-
-            else: 
+            else:
                 print("Invalid command. Try /help")
             
     def resume(self):
