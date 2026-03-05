@@ -45,10 +45,12 @@ class Client:
                 input["data"]["from"] = self.username
                 input["data"]["msg_id"] = f"msg_{int(time.time())}"
                 input["data"]["timestamp"] = time.time()
+                input["data"]["msg_type"] = "text"
                 self.protocol.MSG(self.connection, 
-                            input["chat_id"],
-                            input["chat_type"],
-                            input["payload"])
+                            input["data"]["chat_id"],
+                            input["data"]["chat_type"],
+                            input["data"]["msg_type"],
+                            input["data"]["payload"])
             case _:
                 pass
 

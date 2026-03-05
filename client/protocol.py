@@ -1,3 +1,4 @@
+from cgitb import text
 from hashlib import sha256
 import time
 from tokenize import group
@@ -22,9 +23,10 @@ class Protocol:
     def handleIncoming(self, connection, serverMessage):
         messageName = serverMessage["message_name"]
         handler = self.handlers.get(messageName)
-        if messageName == "MSG":
-            self.handle_incoming_message(serverMessage)
-        elif handler:
+        #if messageName == "MSG":
+        #    self.handle_incoming_message(serverMessage)
+        #elif handler:
+        if handler:
             handler(connection, serverMessage)
 
         else: 
@@ -207,6 +209,11 @@ class Protocol:
         chat_id = data.get("chat_id")
         chat_type = data.get("chat_type")
         payload = data.get("payload")
+
+        if data.get("msg_type") != text:
+            self.handle_incoming_message(connection, message)
+            return
+
 
         if chat_type == "private":
             self.client.interface.display(f"\n[PM from {from_user}]: {payload}")
