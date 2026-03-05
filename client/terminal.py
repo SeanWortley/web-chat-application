@@ -12,7 +12,8 @@ class Terminal:
             "/quit": self.quit,
             "1": self.view_groups,
             "2": self.create_group,
-            "3": self.join_group
+            "3": self.join_group,
+            "4": self.message
 
         }
         self.on_user_input = None
@@ -59,7 +60,7 @@ class Terminal:
         print("1. View Groups")
         print("2. Create Group")
         print("3. Join Group")
-        print("4. Message Friend")
+        print("4. Message")
         print("5. Logout")
 
     def login(self):
@@ -124,6 +125,16 @@ class Terminal:
         self.on_user_input({
             "message_name": "GROUP_LIST"
         })
+    
+    def media_share(self, peer):
+        peer = input("Enter name of recepient:\n> ")
+        self.on_user_input({
+            "message_name": "MEDIA_REQUEST",
+            "data": {
+                     "to": peer
+                     }
+        })
+
 
     def display(self, text): # Will have to be adapted once GUI is added.
         print(text)

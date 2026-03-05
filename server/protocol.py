@@ -226,7 +226,7 @@ class Protocol:
             
             if recipients:
                 self.MSG_DELIVERED(connection, msg_id, recipients)
-
+    
     def handle_CREATE_GROUP(self, connection, message):
         print(f"handle_CREATE_GROUP called with: {message}")
         if not connection.authenticated:
