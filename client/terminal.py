@@ -41,7 +41,7 @@ class Terminal:
             elif text == "3":
                 self.join_group()
             elif text == "4":
-                self.message_friend()  
+                self.private_message()  
             elif text == "5":
                 self.logout()
             
@@ -139,6 +139,12 @@ class Terminal:
 
     def display(self, text): # Will have to be adapted once GUI is added.
         print(text)
+
+    def private_message(self):
+        recipient = input("Enter recipient username:\n> ")
+        message = input("Enter your message:\n> ")
+    
+        self.send_message(recipient, message)
 
     def send_message(self, recipient, message):
         print(f"send_message called, logged_in={self.logged_in}")
