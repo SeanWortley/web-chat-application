@@ -1,4 +1,5 @@
 from socket import *
+import time
 from connection import Connection
 from protocol import Protocol
 from terminal import Terminal
@@ -39,9 +40,15 @@ class Client:
             case "JOIN_GROUP":
                 self.protocol.JOIN_GROUP(self.connection, input["data"]["group_name"])
             case "GROUP_LIST":
-                self.protocol.GROUP_LIST(self.connection)            
-            case "MSG":
-                self.protocol.MSG(self.connection, input["data"]["chat_id"], input["data"]["chat_type"], input["data"]["msg_type"], input["data"]["text"],)
+                self.protocol.GROUP_LIST(self.connection)
+            case "MSG":  
+                input["data"]["from"] = self.username
+                input["data"]["msg_id"] = f"msg_{int(time.time())}"
+                input["data"]["timestamp"] = time.time()
+                self.protocol.MSG(self.connection, 
+                            input["data"]["chat_id"],
+                            input["data"]["chat_type"],
+                            input["data"]["payload"])
             case _:
                 pass
 

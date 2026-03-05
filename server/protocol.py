@@ -58,6 +58,7 @@ class Protocol:
 
         connection.sendJson({
             "message_name": "AUTH_OK", 
+            "from": connection.loggedInAs,
             "data": {
                 "welcome_message": welcome_message}
                 })
@@ -75,6 +76,7 @@ class Protocol:
 
         connection.sendJson({
             "message_name": "CREATE_ACCOUNT_OK",
+            "from": connection.loggedInAs, 
             "data": {
                 "welcome_message": welcome_message}
         })
@@ -183,12 +185,13 @@ class Protocol:
             self.bad_request_error(connection, "User isn't connected")
             return
         
-        from_user = connection.loggedInAs
+        from_user = message.get("from")
         chat_id = message.get("chat_id")  #eeither the username or the grp_id/name
         chat_type = message.get("chat_type") 
         msg_id = message.get("msg_id", "unknown")
         timestamp = message.get("timestamp", "unknown")
         payload = message.get("payload", "")
+        
         
         if chat_type == "private":
             # we know it's a 1-to-1 chat therefore send to 1 person, get their dets
@@ -313,3 +316,24 @@ class Protocol:
                 "message": message
             }
         })
+    def get_user_connection(self, username):
+        ##will ID the user with their username, therefore for the message sending we the different users' terminals can operate correctly identifying these
+        for conn in self.server.connections:
+            if conn.loggedInAs == username and conn.authenticated:
+                return conn
+        return None
+    
+    def forward_message(self, recipient_conn, from_user, chat_id, chat_type, msg_id, timestamp, payload):
+            #forarding of the message to correct recepient
+            recipient_conn.sendJson({
+            "message_name": "MSG",
+            "type": "DATA",
+            "data": {
+            "from": from_user,
+            "chat_id": chat_id,
+            "chat_type": chat_type,
+            "msg_id": msg_id,
+            "timestamp": timestamp,
+            "payload": payload
+            }
+    })
