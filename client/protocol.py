@@ -20,7 +20,9 @@ class Protocol:
     def handleIncoming(self, connection, serverMessage):
         messageName = serverMessage["message_name"]
         handler = self.handlers.get(messageName)
-        if handler:
+        if messageName == "MSG":
+            self.handle_incoming_message(serverMessage)
+        elif handler:
             handler(connection, serverMessage)
 
         else: 
@@ -192,5 +194,13 @@ class Protocol:
         else:
             print(f" {sender}: {payload}")
 
+    def handle_media_request(sender, content):
+        pass
+
+    def handle_media_response():
+        pass
+
+    def handle_media_complete():
+        pass
 
 
