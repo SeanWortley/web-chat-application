@@ -1,6 +1,7 @@
 from threading import Thread, Event
 from hashlib import sha256
 from tokenize import group
+import queue
 
 class Terminal:
 
@@ -20,8 +21,9 @@ class Terminal:
         self.logged_in = False
         self.chatting_mode = False
 
-        unseen_messages = []
-        self.current_chat = None
+
+        self.unread_messages = {}
+        self.current_chat = None # Is either 'from' or 'group_name' depending on chat type
 
     def start(self):
         print("Welcome to the terminal interface for our chat application!")
@@ -72,22 +74,78 @@ class Terminal:
                 print("Invalid command. Try /help")
 
     def process_msg(self, message, channel):
+        if channel == self.current_chat:
+            self.print_msg(message)
+        else:
+            self.queue_msg(message)
+            self.notify_msg(message)
+    
+    def process_unread_in_current_chat(self):
+        if self.current_chat not in self.unread_messages:
+            return
+        
+        q = self.unread_messages[self.current_chat]
+        while not q.empty():
+            message = q.get()
+            self.print_msg(message, True)
+        del self.unread_messages[self.current_chat]
+
+
+    def queue_msg(self, message):
         data = message.get("data")
         from_user = data.get("from")
+        chat_type = data.get("chat_type")
+        chat_id = data.get("chat_id")
 
-        if channel == self.current_chat:
-            print(f'\n{from_user}: {data.get("payload")}\n>> ', end="")
+        # This just makes it match how we keep track of current_chat :)
+        if chat_type == "private":
+            key = from_user
         else:
-            if self.chatting_mode:
-                print(f'\n[New message from {from_user}]\n>> ', end='')
-            else:
-                print(f'\n[New message from {from_user}]\n> ', end='')
+            key = chat_id
+
+        if key in self.unread_messages:
+            self.unread_messages[key].put(message)
+
+        else:
+            unread_queue = queue.Queue()
+            unread_queue.put(message)
+            self.unread_messages[key] = unread_queue
+
+        
+    def notify_msg(self, message):
+        data = message.get("data")
+        from_user = data.get("from")
+        chat_type = data.get("chat_type")
+        chat_id = data.get("chat_id")
+
+        if chat_type == "private":
+            notification_message = f'\n[NEW PRIVATE MESSAGE FROM {from_user.upper()}]'
+        else:
+            notification_message = f'\n[NEW MESSAGE IN |{chat_id.upper()}| FROM {from_user.upper()}]'
+
+        if self.chatting_mode:
+            notification_message = f'{notification_message}\n>> '
+        else:
+            notification_message = f'{notification_message}\n> '
+
+
+        print(notification_message, end="")
+
     
+    def print_msg(self, message, is_unread=False):
+        data = message.get("data")
+        from_user = data.get("from")
+        if is_unread:
+            print(f'{from_user}: {data.get("payload")}')
+        else:
+            print(f'\n{from_user}: {data.get("payload")}\n>> ', end="")
+
     def start_private_chat(self):
-        self.chatting_mode = True
         recipient = input("Who would you like to chat with?\n> ")
         self.current_chat = recipient
 
+        self.chatting_mode = True
+        self.process_unread_in_current_chat()
         text = input(">> ")
         while text != "/quit":
             self.on_user_input({
@@ -100,13 +158,15 @@ class Terminal:
             })
             text = input(">> ")
         self.chatting_mode = False
+        self.show_logged_in_menu()
         
 
     def start_group_chat(self):
-        self.chatting_mode = False
         group = input("Which chat room would you like to enter?\n> ")
         self.current_chat = group
 
+        self.chatting_mode = True
+        self.process_unread_in_current_chat()
         text = input(">> ")
         while text != "/quit":
             self.on_user_input({
@@ -119,6 +179,7 @@ class Terminal:
             })
             text = input(">> ")
         self.chatting_mode = False
+        self.show_logged_in_menu()
 
             
     def resume(self):

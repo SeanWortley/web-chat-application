@@ -233,7 +233,7 @@ class Protocol:
                     member_conn = self.get_user_connection(member)
 
                     if member_conn:
-                        print(f"handle_MSG: from={from_user}, chat_id={chat_id}, chat_type={chat_type}, recipient_conn={recipient_conn}")
+                        print(f"handle_MSG: from={from_user}, chat_id={chat_id}, chat_type={chat_type}, member_conn={member_conn}")
                         self.forward_message(member_conn, from_user, group_name, "group", msg_id, timestamp, payload)
 
                     else:
