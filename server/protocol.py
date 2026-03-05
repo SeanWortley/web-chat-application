@@ -11,6 +11,7 @@ class Protocol:
             "MSG": self.handle_MSG,
             "CREATE_GROUP": self.handle_CREATE_GROUP,
             "JOIN_GROUP": self.handle_JOIN_GROUP,
+            "GROUP_LIST": self.handle_GROUP_LIST
         }
     
     def handleIncoming(self, connection, clientMessage):
@@ -247,28 +248,44 @@ class Protocol:
 
     def handle_JOIN_GROUP(self, connection, message):
         if not connection.authenticated:
-            self.bad_request_error(connection, "User isn't logged in")
+            self.JOIN_GROUP_ACK(connection, "fail", "You aren't logged in")
             return
-            
-        group_name = message.get("group_name")
+
+        group_name = message["data"]["group_name"]
         username = connection.loggedInAs
-        
-        if group_name not in self.server.groups:
-            self.JOIN_GROUP_ACK(connection, "fail", "Group doesn't exist")
+
+        if not self.server.database.get_group(group_name):
+            self.JOIN_GROUP_ACK(connection, "fail", "Group does not exist")
             return
-        
-        if username in self.server.groups[group_name]:
-            self.JOIN_GROUP_ACK(connection, "fail", "Already in group")
+
+        if self.server.database.is_group_member(group_name, username):   
+            self.JOIN_GROUP_ACK(connection, "fail", f"Already in group {group_name}")
             return
-        
-        self.server.groups[group_name].append(username)
-        
-        if username not in self.server.user_groups:
-            self.server.user_groups[username] = []
-        self.server.user_groups[username].append(group_name)
-        
-        print(f" {username} joined '{group_name}'")
+
+        self.server.database.add_group_member(group_name, username)
+        self.server.log(f"{username} joined '{group_name}'")
         self.JOIN_GROUP_ACK(connection, "success", f"You joined '{group_name}'")
+
+    def handle_GROUP_LIST(self, connection, message):
+        if not connection.authenticated:
+            self.GROUP_LIST_ACK(connection, "fail", [], f"You aren't logged in")
+            return
+
+        username = connection.loggedInAs
+        groups = self.server.database.get_user_groups(username)
+        group_names = [row["group_name"] for row in groups]
+
+        self.GROUP_LIST_ACK(connection, "success", group_names, None)
+
+    def GROUP_LIST_ACK(self, connection, result, groups, message):
+        connection.sendJson({
+            "message_name": "GROUP_LIST_ACK",
+            "data": {
+                "result": result,
+                "groups": groups,
+                "message": message
+            }
+        })
 
     def CREATE_GROUP_ACK(self, connection, result, message):
         connection.sendJson({

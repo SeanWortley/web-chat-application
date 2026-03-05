@@ -133,7 +133,9 @@ class Terminal:
         })
 
     def view_groups(self):
-        pass
+        self.on_user_input({
+            "message_name": "GROUP_LIST"
+        })
 
     def display(self, text): # Will have to be adapted once GUI is added.
         print(text)

@@ -1,5 +1,6 @@
 from hashlib import sha256
 import time
+from tokenize import group
 
 class Protocol:
     def __init__(self, client):
@@ -10,7 +11,9 @@ class Protocol:
             "CREATE_ACCOUNT_OK": self.handle_CREATE_ACCOUNT_OK,
             "CREATE_ACCOUNT_FAIL": self.handle_CREATE_ACCOUNT_FAIL,
             "CREATE_GROUP_ACK": self.handle_CREATE_GROUP_ACK,
+            "JOIN_GROUP_ACK": self.handle_JOIN_GROUP_ACK,
             "LOGOUT_ACK": self.handle_LOGOUT_ACK,
+            "GROUP_LIST_ACK": self.handle_GROUP_LIST_ACK
         }
 
     def handleIncoming(self, connection, serverMessage):
@@ -60,6 +63,24 @@ class Protocol:
         else:
             self.client.interface.display(f'Group creation unsuccessful!\n{message["data"]["message"]}')
 
+    def handle_JOIN_GROUP_ACK(self, connection, message):
+        result = message["data"]["result"]
+        if result == "success":
+            self.client.interface.display(f'Successfully joined this group!\n{message["data"]["message"]}')
+        else:
+            self.client.interface.display(f'You weren\'t able to join this group!\n{message["data"]["message"]}')
+
+    def handle_GROUP_LIST_ACK(self, connection, message):
+        result = message["data"]["result"]
+        if result == "fail":
+            self.client.interface.display(message["data"]["message"])
+        else:
+            groups = message["data"]["groups"]
+            if groups:
+                for i in groups:
+                    self.client.interface.display(i)
+            else:
+                self.client.interface.display("You do not belong to any groups")
 
     def AUTH(self, connection, username, hashed_pword):
         connection.sendJson({
@@ -118,6 +139,11 @@ class Protocol:
             {
                 "group_name": group_name
             }
+        })
+
+    def GROUP_LIST(self, connection):
+        connection.sendJson({
+            "message_name": "GROUP_LIST"
         })
 
     def LEAVE_GROUP(self, connection, group_name):
