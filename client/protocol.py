@@ -9,7 +9,7 @@ class Protocol:
             "AUTH_FAIL": self.handle_AUTH_FAIL,
             "CREATE_ACCOUNT_OK": self.handle_CREATE_ACCOUNT_OK,
             "CREATE_ACCOUNT_FAIL": self.handle_CREATE_ACCOUNT_FAIL,
-            "CREATE_GROUP_ACK": self.handle_CREATE_GROUP_ACK,
+           # "CREATE_GROUP_ACK": self.handle_CREATE_GROUP_ACK,
             "LOGOUT_ACK": self.handle_LOGOUT_ACK,
             "MSG": self.handle_MSG,  
             "MSG_DELIVERED": self.handle_MSG_DELIVERED,

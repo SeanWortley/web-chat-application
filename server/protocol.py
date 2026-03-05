@@ -313,3 +313,22 @@ class Protocol:
                 "message": message
             }
         })
+    def get_user_connection(self, username):
+        ##will ID the user with their username, therefore for the message sending we the different users' terminals can operate correctly identifying these
+        for conn in self.server.connections:
+            if conn.loggedInAs == username and conn.authenticated:
+                return conn
+        return None
+    
+    def forward_message(self, recipient_conn, from_user, chat_id, chat_type, msg_id, timestamp, payload):
+            #forarding of the message to correct recepient
+            recipient_conn.sendJson({
+            "message_name": "MSG",
+            "type": "DATA",
+            "from": from_user,
+            "chat_id": chat_id,
+            "chat_type": chat_type,
+            "msg_id": msg_id,
+            "timestamp": timestamp,
+            "payload": payload
+    })
