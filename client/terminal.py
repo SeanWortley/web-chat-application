@@ -12,12 +12,13 @@ class Terminal:
             "/logout": self.logout,
             "/msg": self.send_message,
             "/quit": self.quit,
-
+            "/current": self.print_current
         }
         self.on_user_input = None
         self.wait_event = Event()
         self.running = True
         self.logged_in = False
+        self.chatting_mode = False
 
         unseen_messages = []
         self.current_chat = None
@@ -70,14 +71,20 @@ class Terminal:
             else:
                 print("Invalid command. Try /help")
 
-    def process_msg(self, message):
+    def process_msg(self, message, channel):
         data = message.get("data")
-        chat_id = data.get("chat_id")
+        from_user = data.get("from")
 
-        if chat_id == self.current_chat:
-            print(f'\n{chat_id}: {data.get("payload")}\n>> ', end="")
-
+        if channel == self.current_chat:
+            print(f'\n{from_user}: {data.get("payload")}\n>> ', end="")
+        else:
+            if self.chatting_mode:
+                print(f'\n[New message from {from_user}]\n>> ', end='')
+            else:
+                print(f'\n[New message from {from_user}]\n> ', end='')
+    
     def start_private_chat(self):
+        self.chatting_mode = True
         recipient = input("Who would you like to chat with?\n> ")
         self.current_chat = recipient
 
@@ -92,11 +99,12 @@ class Terminal:
                 }
             })
             text = input(">> ")
-
+        self.chatting_mode = False
         
 
     def start_group_chat(self):
-        group = input("Which chat room would you like to join?\n> ")
+        self.chatting_mode = False
+        group = input("Which chat room would you like to enter?\n> ")
         self.current_chat = group
 
         text = input(">> ")
@@ -110,6 +118,7 @@ class Terminal:
                 }
             })
             text = input(">> ")
+        self.chatting_mode = False
 
             
     def resume(self):
@@ -231,3 +240,6 @@ class Terminal:
         })
         print(f"Message sent to {recipient}")
         
+
+    def print_current(self):
+        print(f"Chatting with {self.current_chat}")

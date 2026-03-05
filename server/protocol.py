@@ -185,12 +185,14 @@ class Protocol:
             self.bad_request_error(connection, "User isn't connected")
             return
         
-        from_user = message.get("from")
-        chat_id = message.get("chat_id")  #eeither the username or the grp_id/name
-        chat_type = message.get("chat_type") 
-        msg_id = message.get("msg_id", "unknown")
-        timestamp = message.get("timestamp", "unknown")
-        payload = message.get("payload", "")
+        data = message.get("data")
+
+        from_user = data.get("from")
+        chat_id = data.get("chat_id")  #eeither the username or the grp_id/name
+        chat_type = data.get("chat_type") 
+        msg_id = data.get("msg_id", "unknown")
+        timestamp = data.get("timestamp", "unknown")
+        payload = data.get("payload", "")
         
         
         if chat_type == "private":
@@ -200,10 +202,10 @@ class Protocol:
             
             if recipient_conn:
                 # if the useer is connected this means their  onlinne, therefore we'll continue with the process of sending them the text
+                print(f"handle_MSG: from={from_user}, chat_id={chat_id}, chat_type={chat_type}, recipient_conn={recipient_conn}")
                 self.forward_message(recipient_conn, from_user, chat_id, "private", msg_id, timestamp, payload)
                 #self.MSG_DELIVERED(connection, msg_id, [recipient])
             else:
-                pass
                 self.server.database.store_offline_message(msg_id, from_user, chat_id, payload, timestamp)
 
                 # if the user is offline, we'll just store their message
@@ -231,7 +233,9 @@ class Protocol:
                     member_conn = self.get_user_connection(member)
 
                     if member_conn:
+                        print(f"handle_MSG: from={from_user}, chat_id={chat_id}, chat_type={chat_type}, recipient_conn={recipient_conn}")
                         self.forward_message(member_conn, from_user, group_name, "group", msg_id, timestamp, payload)
+
                     else:
                         self.server.database.store_offline_message(msg_id, from_user, member, payload, timestamp)
 

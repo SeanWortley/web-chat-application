@@ -19,6 +19,7 @@ class Protocol:
         }
 
     def handleIncoming(self, connection, serverMessage):
+        #print(f"handleIncoming: {serverMessage}")
         messageName = serverMessage["message_name"]
         handler = self.handlers.get(messageName)
         if handler:
@@ -152,13 +153,16 @@ class Protocol:
         
         connection.sendJson({
             "message_name": "MSG",
-            "type": "DATA",
-            "from": self.client.username,
-            "chat_id": chat_id,
-            "chat_type": chat_type,
-            "msg_id": msg_id,
-            "timestamp": timestamp,
-            "payload": text
+            "data": {
+                "type": "DATA",
+                "from": self.client.username,
+                "chat_id": chat_id,
+                "chat_type": chat_type,
+                "msg_id": msg_id,
+                "timestamp": timestamp,
+                "payload": text
+            }
+            
         })
 
 
@@ -171,7 +175,18 @@ class Protocol:
         chat_type = data.get("chat_type")
         payload = data.get("payload")
 
-        self.client.interface.process_msg(message)
+        #print(f"handle_MSG: from={from_user}, chat_id={chat_id}, chat_type={chat_type}, current_chat={self.client.interface.current_chat}")
+
+
+        if chat_type == "private":
+            channel = from_user
+        elif chat_type == "group":
+            channel = chat_id
+        else:
+            print("Unkown chat type:", chat_type)
+
+        #print(f"channel={channel}, current_chat={self.client.interface.current_chat}")
+        self.client.interface.process_msg(message, channel)
 
         """
         if chat_type == "private":
