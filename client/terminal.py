@@ -11,6 +11,8 @@ class Terminal:
             "/logout": self.logout,
             "2": self.create_group, 
             "/msg": self.send_message,
+            "/quit": self.quit,
+
         }
         self.on_user_input = None
         self.wait_event = Event()
@@ -71,8 +73,7 @@ class Terminal:
         print("1. View Groups")
         print("2. Create Group")
         print("3. Join Group")
-        print("4. Message Friend")
-        print("5. Logout")
+        print("4. Leave Group")
 
     def login(self):
         username = input("Enter your username:\n> ")
@@ -135,6 +136,16 @@ class Terminal:
     def view_groups(self):
         self.on_user_input({
             "message_name": "GROUP_LIST"
+        })
+
+    def leave_group(self):
+        group_name = input("Enter the name of the group you'd like to leave:\n> ")
+
+        self.on_user_input({
+            "message_name": "LEAVE_GROUP",
+            "data": {
+                "group_name": group_name
+            }
         })
 
     def display(self, text): # Will have to be adapted once GUI is added.
