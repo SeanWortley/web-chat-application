@@ -36,9 +36,9 @@ class Protocol:
     def handle_AUTH_OK(self, connection, message):
         self.client.interface.logged_in = True
         self.client.authenticated = True
-        self.client.username = message.get("from")
 
         self.client.interface.display(message["data"]["welcome_message"])
+        self.client.username = message["from"]
         self.client.interface.show_logged_in_menu()
         self.client.interface.resume()
     
@@ -50,7 +50,6 @@ class Protocol:
     def handle_CREATE_ACCOUNT_OK(self, connection, message):
         self.client.interface.display(message["data"]["welcome_message"])
         self.client.interface.logged_in = True
-        self.client.username = message.get("from")
         self.client.interface.show_logged_in_menu()
         self.client.interface.resume()
 
@@ -170,6 +169,7 @@ class Protocol:
         })
 
     def handle_incoming_message(self,connection, msg):
+        print("Incoming Ekse")
         sender = msg.get('from')
         payload = msg.get('payload', '')
 
@@ -190,6 +190,8 @@ class Protocol:
         # Text stuff
         else:
             print(f" {sender}: {payload}")
+        
+        self.client.interface.resume()
     
     def handle_media_offer(self, sender, content):
         self.client.interface.display(f"{sender} wants to send you {content["filename"]}")
@@ -219,6 +221,7 @@ class Protocol:
             self.client.interface.display(f"\n[PM from {from_user}]: {payload}")
         elif chat_type == "group":
             self.client.interface.display(f"\n[{chat_id}] {from_user}: {payload}")
+        self.client.interface.resume()
 
     def handle_MSG_DELIVERED(self, connection, message):
     #Show message delivery confirmation

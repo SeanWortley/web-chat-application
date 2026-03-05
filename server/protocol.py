@@ -181,6 +181,7 @@ class Protocol:
 
     def handle_MSG(self, connection, message):
         #this is for when a message is sent, from both group instance and private chat instance
+        print(message)
         if not connection.authenticated:
             self.bad_request_error(connection, "User isn't connected")
             return

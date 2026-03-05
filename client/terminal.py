@@ -216,5 +216,5 @@ class Terminal:
                 "payload": message
             }
         })
-        print(f"Message sent to {recipient}")
+        #print(f"Message sent to {recipient}")
         
