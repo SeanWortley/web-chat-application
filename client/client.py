@@ -46,9 +46,9 @@ class Client:
                 input["data"]["msg_id"] = f"msg_{int(time.time())}"
                 input["data"]["timestamp"] = time.time()
                 self.protocol.MSG(self.connection, 
-                            input["data"]["chat_id"],
-                            input["data"]["chat_type"],
-                            input["data"]["payload"])
+                            input["chat_id"],
+                            input["chat_type"],
+                            input["payload"])
             case _:
                 pass
 
