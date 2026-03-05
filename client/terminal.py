@@ -41,7 +41,7 @@ class Terminal:
             elif text == "3":
                 self.join_group()
             elif text == "4":
-                self.message_friend()  # You need to add this!
+                self.message_friend()  
             elif text == "5":
                 self.logout()
             
