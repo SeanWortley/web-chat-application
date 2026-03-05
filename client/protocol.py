@@ -9,7 +9,7 @@ class Protocol:
             "AUTH_FAIL": self.handle_AUTH_FAIL,
             "CREATE_ACCOUNT_OK": self.handle_CREATE_ACCOUNT_OK,
             "CREATE_ACCOUNT_FAIL": self.handle_CREATE_ACCOUNT_FAIL,
-           # "CREATE_GROUP_ACK": self.handle_CREATE_GROUP_ACK,
+            "CREATE_GROUP_ACK": self.handle_CREATE_GROUP_ACK,
             "LOGOUT_ACK": self.handle_LOGOUT_ACK,
             "MSG": self.handle_MSG,  
             "MSG_DELIVERED": self.handle_MSG_DELIVERED,
@@ -72,7 +72,7 @@ class Protocol:
             "message_name": "LOGOUT"
         })
 
-    def LOGOUT(self, connection):
+    def CREATE_GROUP(self, connection, group_name):
         connection.sendJson({
             "message_name": "CREATE_GROUP",
             "data":
@@ -90,21 +90,6 @@ class Protocol:
             }
         })
 
-    def CREATE_GROUP(self, connection, group_name):
-        connection.sendJson({
-            "message_name": "CREATE_GROUP",
-            "type": "COMMAND",
-            "group_name": group_name
-        })
-        print(f"Requesting to create group: {group_name}")
-
-    def JOIN_GROUP(self, connection, group_name):
-        connection.sendJson({
-            "message_name": "JOIN_GROUP",
-            "type": "COMMAND",
-            "group_name": group_name
-        })
-        print(f" Requesting to join group: {group_name}")
 
     def LEAVE_GROUP(self, connection, group_name):
         connection.sendJson({
