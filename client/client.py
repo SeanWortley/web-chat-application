@@ -15,6 +15,10 @@ class Client:
         self.interface.on_user_input = self.handle_user_input
         self.interface.start()
 
+        # UDP socket for media (each instance gets its own)
+        self.udp_socket = None
+        self.udp_port = None
+
         self.protocol = Protocol(self)
         self.connection = Connection(self.socket, self)
         self.connection.start()
@@ -36,7 +40,7 @@ class Client:
                 self.protocol.JOIN_GROUP(self.connection, input["data"]["group_name"])
             case "GROUP_LIST":
                 self.protocol.GROUP_LIST(self.connection)            
-            case "MEDIA_REQUEST_MESSAGE":
+            case "MSG":
                 self.protocol.MSG(self.connection, input["data"]["chat_id"], input["data"]["chat_type"], input["data"]["msg_type"], input["data"]["text"],)
             case _:
                 pass

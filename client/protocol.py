@@ -1,6 +1,7 @@
 from hashlib import sha256
 import time
 from tokenize import group
+import json
 
 class Protocol:
     def __init__(self, client):
@@ -169,4 +170,27 @@ class Protocol:
             "timestamp": timestamp,
             "payload": text
         })
+
+    def handle_incoming_message(self, msg):
+        sender = msg.get('from')
+        payload = msg.get('payload', '')
+
+        print(f"\n[{self.username}] Message from {sender}:")
     
+        content = json.loads(payload)
+        msg_type = content.get('type')
+        
+        if msg_type == 'MEDIA_REQUEST':
+            self.handle_media_request(sender, content)
+            
+        elif msg_type == 'MEDIA_RESPONSE':
+            self.handle_media_response(sender, content)
+            
+        elif msg_type == 'MEDIA_COMPLETE':
+            self.handle_media_complete(content)
+            
+        else:
+            print(f" {sender}: {payload}")
+
+
+

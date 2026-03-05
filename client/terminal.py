@@ -145,7 +145,7 @@ class Terminal:
 
 
         self.on_user_input({
-            "message_name": "MEDIA_REQUEST_MESSAGE",
+            "message_name": "MSG",
             "data": {
                      "msg_type": "media", # to seperate whether we are dealing with text/media
                      "chat_id": recipient,
