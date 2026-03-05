@@ -171,7 +171,7 @@ class Protocol:
         chat_type = data.get("chat_type")
         payload = data.get("payload")
 
-        self.client.process_msg(message)
+        self.client.interface.process_msg(message)
 
         """
         if chat_type == "private":

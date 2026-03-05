@@ -19,6 +19,7 @@ class Terminal:
         self.logged_in = False
 
         unseen_messages = []
+        self.current_chat = None
 
     def start(self):
         print("Welcome to the terminal interface for our chat application!")
@@ -64,22 +65,28 @@ class Terminal:
             else:
                 print("Invalid command. Try /help")
 
-    def process_msg(self):
+    def process_msg(self, message):
+        data = message.get("data")
+        from_user = data.get("from")
 
+        if from_user == self.current_chat:
+            print(f'{from_user}:    {data.get("payload")}')
 
     def start_private_chat(self):
         recipient = input("Who would you like to chat with?\n> ")
+        self.current_chat = recipient
 
         text = input("> ")
         while input != "":
             self.on_user_input({
-            "message_name": "MSG",
-            "data": {
-                "chat_id": recipient,
-                "chat_type": "private",
-                "payload": text
-            }
-        })
+                "message_name": "MSG",
+                "data": {
+                    "chat_id": recipient,
+                    "chat_type": "private",
+                    "payload": text
+                }
+            })
+            text = input("> ")
 
     def start_group_chat(self):
         pass
