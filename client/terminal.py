@@ -163,8 +163,8 @@ class Terminal:
         self.current_chat = recipient
 
         self.chatting_mode = True
-        self.process_unread_in_current_chat()
         print(f"Entered private chat room with {recipient}\n/exit to leave")
+        self.process_unread_in_current_chat()
         text = input(">> ")
         while text != "/exit":
             self.on_user_input({
@@ -185,8 +185,8 @@ class Terminal:
         self.current_chat = group
 
         self.chatting_mode = True
-        self.process_unread_in_current_chat()
         print(f"Entered {group} chat room \n/exit to leave")
+        self.process_unread_in_current_chat()
         text = input(">> ")
         while text != "/exit":
             self.on_user_input({
