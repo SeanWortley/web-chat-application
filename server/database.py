@@ -3,7 +3,7 @@ from threading import local
 
 """
 DO NOT ACCESS FUNCTIONS OR VARIABLES 
-BEGINNING WITH '_' OUTSIDE OF THIS FUNCTION
+BEGINNING WITH '_' OUTSIDE OF THIS FUNCTION PLS AND THANKS
 
 Arguments have a specified type to prevent bad DB interactions.
 """
@@ -55,6 +55,8 @@ class Database:
         connection.commit()
 
     def _get_connection(self):
+
+        #For queries and insertions
         if not hasattr(self._local, "connection"):
             self._local.connection = sqlite3.connect(self.DB_PATH)
             self._local.connection.row_factory = sqlite3.Row
@@ -67,6 +69,7 @@ class Database:
         ).fetchone()
 
     def create_user(self, username: str, hashed_password: str):
+
         try:
             self._get_connection().execute(
                 "INSERT INTO users (username, hashed_password) VALUES (?, ?)",
@@ -74,11 +77,13 @@ class Database:
             )
             self._get_connection().commit()
             return True
+        
         except sqlite3.IntegrityError as e:
             print(f"DB error: {e}")
             return False
 
     def get_group(self, group_name: str):
+
         return self._get_connection().execute(
             "SELECT * FROM chat_groups WHERE group_name = ?", (group_name,)
         ).fetchone()
@@ -96,17 +101,22 @@ class Database:
                 "INSERT INTO chat_groups (group_name, owner) VALUES (?, ?)",
                 (group_name, owner)
             )
+
             self._get_connection().execute(
                 "INSERT INTO group_members (group_name, username) VALUES (?, ?)",
                 (group_name, owner)
             )
+
             self._get_connection().commit()
             return True
+        
+
         except sqlite3.IntegrityError as e:
             print(f"DB error: {e}")
             return False
 
     def is_group_member(self, group_name: str, username: str):
+
         return self._get_connection().execute(
             "SELECT 1 FROM group_members WHERE group_name = ? AND username = ?",
             (group_name, username)
@@ -132,18 +142,24 @@ class Database:
         return result.fetchall()
 
     def store_offline_message(self, msg_id, sender, chat_id, chat_type, group_id=None, msg_text="", timestamp=""):
+        # Like with in create_group
         try:
             self._get_connection().execute(
                 "INSERT INTO offline_messages (msg_id, sender, chat_id, chat_type, group_id, msg_text, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 (msg_id, sender, chat_id, chat_type, group_id, msg_text, timestamp)
             )
+
             self._get_connection().commit()
             return True
+        
+
         except sqlite3.IntegrityError as e:
             print(f"DB error: {e}")
             return False
 
     def get_offline_messages(self, username: str):
+
+
         return self._get_connection().execute("""
             SELECT om.* FROM offline_messages om
             WHERE om.chat_id = ?
@@ -156,6 +172,7 @@ class Database:
             """, (username, username)).fetchall()
     
     def delete_offline_messages(self, username):
+
         self._get_connection().execute(
             "DELETE FROM offline_messages WHERE chat_id = ?", (username,)
         )
