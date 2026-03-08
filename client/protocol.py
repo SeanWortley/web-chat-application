@@ -24,9 +24,17 @@ class Protocol:
         print("FUCKING SOMETHING HAPPENING")
         messageName = serverMessage["message_name"]
         handler = self.handlers.get(messageName)
+<<<<<<< Updated upstream
         #if messageName == "MSG":
         #    self.handle_incoming_message(connection, serverMessage)
         if handler:
+=======
+        if messageName == "MSG":
+            self.handle_incoming_message
+            
+            (serverMessage)
+        elif handler:
+>>>>>>> Stashed changes
             handler(connection, serverMessage)
 
         else: 
