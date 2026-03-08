@@ -376,6 +376,12 @@ class Protocol:
             if conn.loggedInAs == username and conn.authenticated:
                 return conn
         return None
+
+    def get_udp_port(self, username):
+        pass
+
+    def initiate_p2p(self, sender, recipient):
+        pass
     
     def forward_message(self, recipient_conn, from_user, chat_id, chat_type, msg_id, timestamp, payload):
             #forarding of the message to correct recepient
