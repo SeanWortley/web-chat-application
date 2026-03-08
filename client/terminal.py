@@ -110,16 +110,16 @@ class Terminal:
         if media_data:
             # It's a media message
             msg_type = media_data.get("type")
+            sender = data.get("from")
+            filename = media_data.get("filename")
             
             if msg_type == "MEDIA_OFFER":
-                sender = data.get("from")
-                filename = media_data.get("filename")
                 answer = input(f"{sender} wants to send you {filename}, do you Accept/Reject?")
-                self.handle_media_offer(message, media_data, answer)
+                self.media_offer(message, media_data, answer)
             elif msg_type == "MEDIA_RESPONSE":
-                self.handle_media_response(message, media_data)
+                self.media_response(message, media_data)
             elif msg_type == "MEDIA_COMPLETE":
-                self.handle_media_complete(message, media_data)
+                self.media_complete(message, filename)
             else:
                 # Unknown media type
                 print(f"Unknown media type: {msg_type}")
@@ -148,14 +148,15 @@ class Terminal:
         # Not a media message
         return None
     
-    def handle_media_offer():
-        pass
+    def media_offer(self, answer):
+        self.media_response(answer)
     
-    def handle_media_response():
+    def media_response():
+        # how do I send it to protocol to be handled
         pass
 
-    def handle_media_complete():
-        pass
+    def media_complete(self, filename):
+         print(f"File transfer complete: {filename}")
 
     def process_unread_in_current_chat(self):
         if self.current_chat not in self.unread_messages:
