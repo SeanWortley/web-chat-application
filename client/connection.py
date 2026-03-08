@@ -41,3 +41,5 @@ class Connection:
             import traceback
             traceback.print_stack()
             self.socket.close()
+
+            

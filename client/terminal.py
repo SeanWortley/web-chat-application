@@ -2,6 +2,9 @@ from threading import Thread, Event
 from hashlib import sha256
 from tokenize import group
 import queue
+import os
+import json
+from pathlib import Path
 
 class Terminal:
 
@@ -92,12 +95,68 @@ class Terminal:
                 self.queue_msg(standard_form)
 
     def process_msg(self, message, channel):
-        if channel == self.current_chat:
-            self.print_msg(message)
-        else:
+        if channel != self.current_chat:
             self.queue_msg(message)
             self.notify_msg(message)
+            return
     
+        # Get the payload
+        data = message.get("data", {})
+        payload = data.get("payload")
+        
+        # Check if it's a media message (JSON)
+        media_data = self.extract_media_payload(payload)
+        
+        if media_data:
+            # It's a media message
+            msg_type = media_data.get("type")
+            
+            if msg_type == "MEDIA_OFFER":
+                sender = data.get("from")
+                filename = media_data.get("filename")
+                answer = input(f"{sender} wants to send you {filename}, do you Accept/Reject?")
+                self.handle_media_offer(message, media_data, answer)
+            elif msg_type == "MEDIA_RESPONSE":
+                self.handle_media_response(message, media_data)
+            elif msg_type == "MEDIA_COMPLETE":
+                self.handle_media_complete(message, media_data)
+            else:
+                # Unknown media type
+                print(f"Unknown media type: {msg_type}")
+                self.print_msg(message)
+        else:
+            # It's a plain text message
+            self.print_msg(message)
+
+    def extract_media_payload(self, payload):
+        # If it's already a dict, use it directly
+        if isinstance(payload, dict):
+            return payload
+        
+        # If it's a string, try to parse as JSON
+        if isinstance(payload, str):
+            # Quick check: does it look like JSON?
+            payload_stripped = payload.strip()
+            if payload_stripped.startswith('{') and payload_stripped.endswith('}'):
+                try:
+                    result = json.loads(payload)
+                    if isinstance(result, dict):
+                        return result
+                except:
+                    pass
+        
+        # Not a media message
+        return None
+    
+    def handle_media_offer():
+        pass
+    
+    def handle_media_response():
+        pass
+
+    def handle_media_complete():
+        pass
+
     def process_unread_in_current_chat(self):
         if self.current_chat not in self.unread_messages:
             return
@@ -163,45 +222,83 @@ class Terminal:
         self.current_chat = recipient
 
         self.chatting_mode = True
-        print(f"Entered private chat room with {recipient}\n/exit to leave")
+        self.clear()
+        print(f"========= Entered private chat room with {recipient} =========")
+        print("Commands: /mdt <filepath> -  To send a file to {recipient}")
+        print("          /exit - Leave")
         self.process_unread_in_current_chat()
         text = input(">> ")
         while text != "/exit":
-            self.on_user_input({
-                "message_name": "MSG",
-                "data": {
-                    "chat_id": recipient,
-                    "chat_type": "private",
-                    "payload": text
-                }
-            })
+            if text == "/mdt":
+                filepath = input("Enter filepath:\n")
+                self.initiate_media_transfer(recipient, filepath, chat_type= "private")
+            else:
+                self.on_user_input({
+                    "message_name": "MSG",
+                    "data": {
+                        "chat_id": recipient,
+                        "chat_type": "private",
+                        "payload": text
+                    }
+                })
             text = input(">> ")
         self.chatting_mode = False
         self.show_logged_in_menu()
-        
+
+    def initiate_media_transfer(self, recipient, filepath, chat_type):
+        # Validate path
+        file_path = Path(filepath)
+        if not file_path.exists():
+            print(f"File not found: {filepath}")
+            return
+    
+        filename = file_path.name
+        filesize = file_path.stat().st_size
+
+        media_request = {
+            'type': 'MEDIA_OFFER',
+            'filename': filename,
+            'filesize': filesize,
+        }
+
+        self.on_user_input({
+            "message_name": "MSG",
+            "data": {
+                "chat_id": recipient,
+                "chat_type": chat_type,
+                "payload": json.dumps(media_request)
+            }
+        })
 
     def start_group_chat(self):
         group = input("Which chat room would you like to enter?\n> ")
         self.current_chat = group
 
         self.chatting_mode = True
-        print(f"Entered {group} chat room \n/exit to leave")
+        self.clear()
+        print(f"Entered {group} chat room")
+        print("Commands: /mdt <filepath> - Send file to group")
+        print("          /exit - Leave")
+
         self.process_unread_in_current_chat()
         text = input(">> ")
         while text != "/exit":
-            self.on_user_input({
-                "message_name": "MSG",
-                "data": {
-                    "chat_id": group,
-                    "chat_type": "group",
-                    "payload": text
-                }
-            })
+            if text == "/mdt":
+                filepath = input("Enter filepath:\n")
+                self.initiate_media_transfer(group, filepath, chat_type="group")
+            else:
+                self.on_user_input({
+                    "message_name": "MSG",
+                    "data": {
+                        "chat_id": group,
+                        "chat_type": "group",
+                        "payload": text
+                    }
+                })
             text = input(">> ")
         self.chatting_mode = False
         self.show_logged_in_menu()
-
-            
+    
     def resume(self):
         self.wait_event.set()
     
@@ -210,12 +307,14 @@ class Terminal:
         pass # Implement later
 
     def show_logged_out_menu(self):
+        self.clear()
         print("=== MAIN MENU ===")
         print("/login")
         print("/register")
         print("/help")
 
     def show_logged_in_menu(self):
+        self.clear()
         print("=== CHAT MENU ===")
         print("1. Enter Private Chat")
         print("2. Enter Group Chat")
@@ -321,6 +420,8 @@ class Terminal:
         })
         print(f"Message sent to {recipient}")
         
+    def clear(self):
+            os.system('cls' if os.name == 'nt' else 'clear')
 
     def print_current(self):
         print(f"Chatting with {self.current_chat}")

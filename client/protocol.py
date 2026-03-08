@@ -185,7 +185,7 @@ class Protocol:
         elif chat_type == "group":
             channel = chat_id
         else:
-            print("Unkown chat type:", chat_type)
+            print("Unknown chat type:", chat_type)
 
         #print(f"channel={channel}, current_chat={self.client.interface.current_chat}")
         self.client.interface.process_msg(message, channel)
@@ -214,3 +214,12 @@ class Protocol:
         recipients = data.get("recipients", [])
         self.client.interface.display(f"✓ Message delivered to: {', '.join(recipients)}")
     
+    def handle_incoming_media_request(self, message):
+        pass
+
+    def handle_media_response(self, message):
+        pass
+
+    def accept_transfer(self, transfer_id):
+        pass
+

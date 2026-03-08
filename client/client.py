@@ -23,6 +23,9 @@ class Client:
     def initialise(self):
         pass
 
+    def get_udp_port(self):
+        pass
+
     def handle_user_input(self, input):
         match input["message_name"]:
             case "AUTH":
