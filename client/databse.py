@@ -10,3 +10,6 @@ Arguments have a specified type to prevent bad DB interactions.
 
 class Database:
     DB_PATH = "client/client.db"
+
+    def __init__(self):
+        pass
