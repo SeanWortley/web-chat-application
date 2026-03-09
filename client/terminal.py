@@ -3,8 +3,7 @@ from hashlib import sha256
 from tokenize import group
 import queue
 import os
-import json
-from pathlib import Path
+
 
 class Terminal:
 
@@ -98,8 +97,12 @@ class Terminal:
         if channel != self.current_chat:
             self.queue_msg(message)
             self.notify_msg(message)
-            return
-    
+   
+        else:
+            # It's a plain text message
+            self.print_msg(message)
+
+    """
         # Get the payload
         data = message.get("data", {})
         payload = data.get("payload")
@@ -124,39 +127,8 @@ class Terminal:
                 # Unknown media type
                 print(f"Unknown media type: {msg_type}")
                 self.print_msg(message)
-        else:
-            # It's a plain text message
-            self.print_msg(message)
-
-    def extract_media_payload(self, payload):
-        # If it's already a dict, use it directly
-        if isinstance(payload, dict):
-            return payload
-        
-        # If it's a string, try to parse as JSON
-        if isinstance(payload, str):
-            # Quick check: does it look like JSON?
-            payload_stripped = payload.strip()
-            if payload_stripped.startswith('{') and payload_stripped.endswith('}'):
-                try:
-                    result = json.loads(payload)
-                    if isinstance(result, dict):
-                        return result
-                except:
-                    pass
-        
-        # Not a media message
-        return None
+        """
     
-    def media_offer(self, answer):
-        self.media_response(answer)
-    
-    def media_response():
-        # how do I send it to protocol to be handled
-        pass
-
-    def media_complete(self, filename):
-         print(f"File transfer complete: {filename}")
 
     def process_unread_in_current_chat(self):
         if self.current_chat not in self.unread_messages:
@@ -231,8 +203,15 @@ class Terminal:
         text = input(">> ")
         while text != "/exit":
             if text == "/mdt":
-                filepath = input("Enter filepath:\n")
-                self.initiate_media_transfer(recipient, filepath, chat_type= "private")
+                parts = text.split(maxsplit=1)
+
+                if(len(parts)) == 1:
+                    # Just "/mdt" - prompt for filepath
+                    filepath = input("Enter filepath:\n> ").strip()
+                else:
+                # "/mdt /path/to/file" - use provided path
+                    filepath = parts[1].strip()
+                self.send_media_offer(recipient, filepath, chat_type= "private")
             else:
                 self.on_user_input({
                     "message_name": "MSG",
@@ -246,30 +225,7 @@ class Terminal:
         self.chatting_mode = False
         self.show_logged_in_menu()
 
-    def initiate_media_transfer(self, recipient, filepath, chat_type):
-        # Validate path
-        file_path = Path(filepath)
-        if not file_path.exists():
-            print(f"File not found: {filepath}")
-            return
     
-        filename = file_path.name
-        filesize = file_path.stat().st_size
-
-        media_request = {
-            'type': 'MEDIA_OFFER',
-            'filename': filename,
-            'filesize': filesize,
-        }
-
-        self.on_user_input({
-            "message_name": "MSG",
-            "data": {
-                "chat_id": recipient,
-                "chat_type": chat_type,
-                "payload": json.dumps(media_request)
-            }
-        })
 
     def start_group_chat(self):
         group = input("Which chat room would you like to enter?\n> ")
@@ -285,8 +241,15 @@ class Terminal:
         text = input(">> ")
         while text != "/exit":
             if text == "/mdt":
-                filepath = input("Enter filepath:\n")
-                self.initiate_media_transfer(group, filepath, chat_type="group")
+                    parts = text.split(maxsplit=1)
+
+                    if(len(parts)) == 1:
+                        # Just "/mdt" - prompt for filepath
+                        filepath = input("Enter filepath:\n> ").strip()
+                    else:
+                    # "/mdt /path/to/file" - use provided path
+                        filepath = parts[1].strip()
+                        self.send_media_offer(group, filepath, chat_type= "group")
             else:
                 self.on_user_input({
                     "message_name": "MSG",
@@ -405,6 +368,18 @@ class Terminal:
     
         self.send_message(recipient, message)
 
+    def send_media_offer(self, chat_id, filepath, chat_type):
+        self.on_user_input({
+            "message_name": "MEDIA_OFFER",
+            "data": {
+                    "chat_id": chat_id,
+                    "filepath": filepath,
+                    "chat_type": chat_type,
+            }  
+        })
+    
+
+
     def send_message(self, recipient, message):
         print(f"send_message called, logged_in={self.logged_in}")
         if not self.logged_in:
@@ -422,7 +397,11 @@ class Terminal:
         print(f"Message sent to {recipient}")
         
     def clear(self):
-            os.system('cls' if os.name == 'nt' else 'clear')
+        os.system('cls' if os.name == 'nt' else 'clear')
 
     def print_current(self):
         print(f"Chatting with {self.current_chat}")
+
+    def accept_or_reject_offer(self):
+        answer = input("Enter accept or reject: ")
+        return answer

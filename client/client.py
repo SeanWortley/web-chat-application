@@ -3,6 +3,7 @@ import time
 from connection import Connection
 from protocol import Protocol
 from terminal import Terminal
+from udp_handler import UDPHandler
 
 class Client:
     def __init__(self, host, port, interface):
@@ -11,6 +12,9 @@ class Client:
 
         self.username = None
         self.authenticated = False
+
+        self.udp = UDPHandler(self.socket, self)
+        self.udp.handler = None     # Will be created when needed
 
         self.interface = interface
         self.interface.on_user_input = self.handle_user_input
@@ -23,9 +27,23 @@ class Client:
     def initialise(self):
         pass
 
-    def get_udp_port(self):
-        pass
-
+    def get_udp_handler(self):
+        """Get or create UDP handler"""
+        if not self.udp_handler and self.authenticated:
+            # Just create - all logic is inside udp_handler.py
+            from udp_handler import UDPHandler
+            self.udp_handler = UDPHandler(self, callback=self._on_udp_event)
+            self.udp_handler.start()  # Start listening
+        return self.udp_handler
+    
+    def _on_udp_event(self, event, transfer_id, data=None):
+        """Handle UDP events - just forward to UI"""
+        if event == 'progress':
+            self.interface.update_progress(transfer_id, data)
+        elif event == 'complete':
+            self.interface.transfer_complete(transfer_id, data)
+            self.udp_handler = None  # Clear reference
+    
     def handle_user_input(self, input):
         match input["message_name"]:
             case "AUTH":
@@ -40,6 +58,17 @@ class Client:
                 self.protocol.JOIN_GROUP(self.connection, input["data"]["group_name"])
             case "GROUP_LIST":
                 self.protocol.GROUP_LIST(self.connection)
+            case "MEDIA_OFFER":
+                handler = self.get_udp_handler() 
+                port = handler.get_port() if handler else None
+
+                input["data"]["from"] = self.username
+                input["data"]["transfer_id"] = f"msg_{int(time.time())}"
+                input["data"]["sender_port"] = port
+                self.protocol.media_offer(self.connection,
+                            input["data"]["chat_id"],
+                            input["data"]["filepath"],
+                            input["data"]["chat_type"],)
             case "MSG":  
                 input["data"]["from"] = self.username
                 input["data"]["msg_id"] = f"msg_{int(time.time())}"

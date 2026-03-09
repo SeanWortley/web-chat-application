@@ -1,9 +1,13 @@
 from tabnanny import verbose
+import threading
+import time
 
 
 class Protocol:
     def __init__(self, server):
         self.server = server
+        self.pending_offers = {} #
+        self.lock = threading.Lock()
         self.handlers = {
             "AUTH": self.handle_AUTH,
             "CREATE_ACCOUNT": self.handle_CREATE_ACCOUNT,
@@ -12,7 +16,8 @@ class Protocol:
             "CREATE_GROUP": self.handle_CREATE_GROUP,
             "JOIN_GROUP": self.handle_JOIN_GROUP,
             "GROUP_LIST": self.handle_GROUP_LIST,
-            "REQUEST_UNSENT_MESSAGES": self.handle_REQUEST_UNSENT_MESSAGES
+            "REQUEST_UNSENT_MESSAGES": self.handle_REQUEST_UNSENT_MESSAGES,
+            "MEDIA_OFFER": self.handle_MSG
         }
     
     def handleIncoming(self, connection, clientMessage):
@@ -218,71 +223,160 @@ class Protocol:
         })
 
     def handle_MSG(self, connection, message):
-        #this is for when a message is sent, from both group instance and private chat instance
+        """
+        Handles all incoming messages (private or group) and routes
+        them to the correct handler based on message type.
+        """
         if not connection.authenticated:
             self.bad_request_error(connection, "User isn't connected")
             return
-        
-        data = message.get("data")
 
-        from_user = data.get("from")
-        chat_id = data.get("chat_id")  #eeither the username or the grp_id/name
-        chat_type = data.get("chat_type") 
-        msg_id = data.get("msg_id", "unknown")
-        timestamp = data.get("timestamp", "unknown")
-        payload = data.get("payload", "")
-        
-        
-        if chat_type == "private":
-            # we know it's a 1-to-1 chat therefore send to 1 person, get their dets
-            recipient = chat_id
+        # Safely parse message data
+        message_name = message.get("message_name")
+        data = message.get("data", {})
+
+        # Build a unified context for routing
+        context = {
+            # Core info
+            "from_user": data.get("from"),
+            "chat_id": data.get("chat_id"),  # username or group name
+            "chat_type": data.get("chat_type"),
+
+            # Text message fields
+            "msg_id": data.get("msg_id", "unknown"),
+            "timestamp": data.get("timestamp", "unknown"),
+            "payload": data.get("payload", ""),
+
+            # Media message fields
+            "transfer_id": data.get("transfer_id"),
+            "filename": data.get("filename"),
+            "filesize": data.get("filesize"),
+            "sender_port": data.get("sender_port")
+        }
+
+        # Handle private messages
+        if context["chat_type"] == "private":
+            recipient = context["chat_id"]
             recipient_conn = self.get_user_connection(recipient)
-            
-            if recipient_conn:
-                # if the useer is connected this means their  onlinne, therefore we'll continue with the process of sending them the text
-                print(f"handle_MSG: from={from_user}, chat_id={chat_id}, chat_type={chat_type}, recipient_conn={recipient_conn}")
-                self.forward_message(recipient_conn, from_user, chat_id, "private", msg_id, timestamp, payload)
-                #self.MSG_DELIVERED(connection, msg_id, [recipient])
-            else:
-                self.server.database.store_offline_message(msg_id, from_user, chat_id, chat_type, None, payload, timestamp)
+            context.update({
+                "target_conn": recipient_conn,
+                "recipient": recipient,
+                "group_name": None
+            })
 
+            self.route_message(message_name, context)
 
-                # if the user is offline, we'll just store their message
-                #self.MSG_STORED(connection, msg_id, [recipient])
-                
-        elif chat_type == "group":
-            # need to check if group exists, if it does we'll continue to send the message with recepient being all the memebers in the group (list)
-            group_name = chat_id
-            
+        # Handle group messages
+        elif context["chat_type"] == "group":
+            group_name = context["chat_id"]
+
+            # Validate group and membership
             if not self.server.database.get_group(group_name):
                 self.bad_request_error(connection, "Group doesn't exist")
                 return
-            
-            if not self.server.database.is_group_member(group_name, from_user):
+
+            if not self.server.database.is_group_member(group_name, context["from_user"]):
                 self.bad_request_error(connection, "You're not in this group")
                 return
-            
-            # Process to send to all memebers in the group
+
+            # Send to all members except sender
             members = self.server.database.get_group_members(group_name)
             for row in members:
                 member = row["username"]
+                if member == context["from_user"]:
+                    continue
 
-                if member != from_user:
+                member_conn = self.get_user_connection(member)
+                group_context = context.copy()
+                group_context.update({
+                    "target_conn": member_conn,
+                    "recipient": member,
+                    "group_name": group_name
+                })
 
-                    member_conn = self.get_user_connection(member)
+                self.route_message(message_name, group_context)
+                
+    def route_message(self, message_name, context):
+        if message_name.startswith("MEDIA_"):
+            self.handle_media_message(message_name, context)
+        else:
+            self.handle_text_message(message_name, context)
 
-                    if member_conn:
-                        print(f"handle_MSG: from={from_user}, chat_id={chat_id}, chat_type={chat_type}, member_conn={member_conn}")
-                        self.forward_message(member_conn, from_user, group_name, "group", msg_id, timestamp, payload)
+    def handle_media_message(self, message_name, ctx):
 
-                    else:
-                        self.server.database.store_offline_message(msg_id, from_user, member, chat_type, group_name, payload, timestamp)
+        target_conn = ctx["target_conn"]
 
-            """
-            if recipients:
-                #self.MSG_DELIVERED(connection, msg_id, recipients)
-                pass
-            """
+        if message_name == "MEDIA_OFFER":
+            # Store it regardless on online status
+            self.media_queue.add_offer(
+                transfer_id=ctx["transfer_id"],
+                sender=ctx["from_user"],
+                sender_port=ctx["sender_port"],
+                recipient=ctx["chat_id"])
+        
+        if message_name == "MEDIA_OFFER":
+
+            print(f"handle_MSG: from={ctx['from_user']}, chat_id={ctx['chat_id']}, chat_type={ctx['chat_type']}, target_conn={target_conn}")
+
+            self.forward_MEDIA_OFFER(
+                target_conn,
+                ctx["from_user"],
+                ctx["chat_id"],
+                ctx["chat_type"],
+                ctx["transfer_id"],
+                ctx["filename"],
+                ctx["filesize"],
+                ctx["sender_port"]
+            )
+
+        elif target_conn and message_name == "MEDIA_RESPONSE":
+            pass
+
+    def add_offer(self, transfer_id, sender, sender_port, recipient):
+            """Store an offer"""
+            with self.lock:
+                self.pending_offers[transfer_id] = {
+                    'sender': sender,
+                    'sender_port': sender_port,
+                    'recipient': recipient,
+                    'timestamp': time.time()
+                }
+            print(f"Added offer {transfer_id}")
+
+    def get_and_remove(self, transfer_id):
+        """Get an offer and remove it (atomic)"""
+        with self.lock:
+            return self.pending_offers.pop(transfer_id, None)
+
+
+    def handle_text_message(self, message_name, ctx):
+
+        target_conn = ctx["target_conn"]
+
+        if target_conn and message_name == "MSG":
+            print(f"handle_MSG: from={ctx['from_user']}, chat_id={ctx['chat_id']}, chat_type={ctx['chat_type']}, target_conn={target_conn}")
+
+            self.forward_message(
+                target_conn,
+                ctx["from_user"],
+                ctx["chat_id"],
+                ctx["chat_type"],
+                ctx["msg_id"],
+                ctx["timestamp"],
+                ctx["payload"]
+            )
+
+        else:
+            self.server.database.store_offline_message(
+                ctx["msg_id"],
+                ctx["from_user"],
+                ctx["recipient"],
+                ctx["chat_type"],
+                ctx["group_name"],
+                ctx["payload"],
+                ctx["timestamp"]
+            ) 
+
 
     def handle_CREATE_GROUP(self, connection, message):
         print(f"handle_CREATE_GROUP called with: {message}")
@@ -377,11 +471,19 @@ class Protocol:
                 return conn
         return None
 
-    def get_udp_port(self, username):
-        pass
-
-    def initiate_p2p(self, sender, recipient):
-        pass
+    def forward_MEDIA_OFFER(self, recipient_conn, from_user, chat_id, chat_type, transfer_id, filename, filesize, sender_port):
+            recipient_conn.sendJson({
+                "message_name": "MEDIA_OFFER",
+                "data": {
+                "from": from_user,
+                "chat_id": chat_id,
+                "chat_type": chat_type,
+                "transfer_id": transfer_id,
+                "filename": filename,
+                "filesize": filesize,
+                "sender_port": sender_port
+                }
+            })
     
     def forward_message(self, recipient_conn, from_user, chat_id, chat_type, msg_id, timestamp, payload):
             #forarding of the message to correct recepient
