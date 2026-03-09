@@ -11,12 +11,12 @@ Arguments have a specified type to prevent bad DB interactions.
 class Database:
     DB_PATH = "server/server.db"
 
-    def _init__(self):
-        self.local = local()
-        self.initialise()
+    def __init__(self):
+        self._local = local()
+        self._initialise()
     
-    def initialise(self):
-        connection = self.get_connection()
+    def _initialise(self):
+        connection = self._get_connection()
         connection.executescript("""
         CREATE TABLE IF NOT EXISTS users (
             username        TEXT    PRIMARY KEY,
@@ -54,60 +54,60 @@ class Database:
         connection.execute("PRAGMA foreign_keys = ON")
         connection.commit()
 
-    def get_connection(self):
+    def _get_connection(self):
 
         #For queries and insertions
-        if not hasattr(self.local, "connection"):
-            self.local.connection = sqlite3.connect(self.DB_PATH)
-            self.local.connection.row_factory = sqlite3.Row
-            self.local.connection.execute("PRAGMA foreign_keys = ON")
-        return self.local.connection
+        if not hasattr(self._local, "connection"):
+            self._local.connection = sqlite3.connect(self.DB_PATH)
+            self._local.connection.row_factory = sqlite3.Row
+            self._local.connection.execute("PRAGMA foreign_keys = ON")
+        return self._local.connection
 
-    def get_user(self, username):
-        return self.get_connection().execute(
+    def get_user(self, username: str):
+        return self._get_connection().execute(
             "SELECT * FROM users WHERE username = ?", (username,)
         ).fetchone()
 
-    def create_user(self, username, hashed_password):
+    def create_user(self, username: str, hashed_password: str):
 
         try:
-            self.get_connection().execute(
+            self._get_connection().execute(
                 "INSERT INTO users (username, hashed_password) VALUES (?, ?)",
                 (username, hashed_password)
             )
-            self.get_connection().commit()
+            self._get_connection().commit()
             return True
         
         except sqlite3.IntegrityError as e:
             print(f"DB error: {e}")
             return False
 
-    def get_group(self, group_name):
+    def get_group(self, group_name: str):
 
-        return self.get_connection().execute(
+        return self._get_connection().execute(
             "SELECT * FROM chat_groups WHERE group_name = ?", (group_name,)
         ).fetchone()
     
-    def get_group_members(self, group_name):
-        return self.get_connection().execute(
+    def get_group_members(self, group_name: str):
+        return self._get_connection().execute(
             "SELECT username FROM group_members WHERE group_name = ?", (group_name,)
         ).fetchall()
 
 
-    def create_group(self, group_name, owner):
+    def create_group(self, group_name: str, owner: str):
         try:
-            self.get_connection().execute("PRAGMA defer_foreign_keys = ON")
-            self.get_connection().execute(
+            self._get_connection().execute("PRAGMA defer_foreign_keys = ON")
+            self._get_connection().execute(
                 "INSERT INTO chat_groups (group_name, owner) VALUES (?, ?)",
                 (group_name, owner)
             )
 
-            self.get_connection().execute(
+            self._get_connection().execute(
                 "INSERT INTO group_members (group_name, username) VALUES (?, ?)",
                 (group_name, owner)
             )
 
-            self.get_connection().commit()
+            self._get_connection().commit()
             return True
         
 
@@ -115,27 +115,27 @@ class Database:
             print(f"DB error: {e}")
             return False
 
-    def is_group_member(self, group_name, username):
+    def is_group_member(self, group_name: str, username: str):
 
-        return self.get_connection().execute(
+        return self._get_connection().execute(
             "SELECT 1 FROM group_members WHERE group_name = ? AND username = ?",
             (group_name, username)
         ).fetchone() is not None
 
-    def add_group_member(self, group_name, username):
+    def add_group_member(self, group_name: str, username: str):
         try:
-            self.get_connection().execute(
+            self._get_connection().execute(
                 "INSERT INTO group_members (group_name, username) VALUES (?, ?)",
                 (group_name, username)
             )
-            self.get_connection().commit()
+            self._get_connection().commit()
             return True
         except sqlite3.IntegrityError as e:
             print(f"DB error: {e}")
             return False
     
-    def get_user_groups(self, username):
-        result = self.get_connection().execute(
+    def get_user_groups(self, username: str):
+        result = self._get_connection().execute(
             "SELECT group_name FROM group_members WHERE username = ?",
             (username,)
         )
@@ -144,12 +144,12 @@ class Database:
     def store_offline_message(self, msg_id, sender, chat_id, chat_type, group_id=None, msg_text="", timestamp=""):
         # Like with in create_group
         try:
-            self.get_connection().execute(
+            self._get_connection().execute(
                 "INSERT INTO offline_messages (msg_id, sender, chat_id, chat_type, group_id, msg_text, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 (msg_id, sender, chat_id, chat_type, group_id, msg_text, timestamp)
             )
 
-            self.get_connection().commit()
+            self._get_connection().commit()
             return True
         
 
@@ -157,10 +157,10 @@ class Database:
             print(f"DB error: {e}")
             return False
 
-    def get_offline_messages(self, username):
+    def get_offline_messages(self, username: str):
 
 
-        return self.get_connection().execute("""
+        return self._get_connection().execute("""
             SELECT om.* FROM offline_messages om
             WHERE om.chat_id = ?
             OR (om.chat_type = 'group' AND EXISTS (
@@ -173,12 +173,12 @@ class Database:
     
     def delete_offline_messages(self, username):
 
-        self.get_connection().execute(
+        self._get_connection().execute(
             "DELETE FROM offline_messages WHERE chat_id = ?", (username,)
         )
     
-        self.get_connection().commit()
+        self._get_connection().commit()
 
-    def validate_credentials(self, username, hashed_password):
+    def validate_credentials(self, username: str, hashed_password: str):
         user = self.get_user(username)
         return (user is not None) and (user["hashed_password"] == hashed_password)
