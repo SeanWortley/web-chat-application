@@ -104,6 +104,17 @@ class Client:
                                 input_data["data"]["chat_id"],
                                 input_data["data"]["chat_type"],
                                 input_data["data"]["payload"])
+            case "MEDIA_OFFER":
+                handler = self.get_udp_handler() 
+                port = handler.get_port() if handler else None
+
+                input["data"]["from"] = self.username
+                input["data"]["transfer_id"] = f"msg_{int(time.time())}"
+                input["data"]["sender_port"] = port
+                self.protocol.media_offer(self.connection,
+                            input["data"]["chat_id"],
+                            input["data"]["filepath"],
+                            input["data"]["chat_type"],)
             case "close_connection":
                 self.connection.close()
             case "quit_program":
@@ -124,6 +135,22 @@ class Client:
     def initialise(self):
         pass
 
+    def get_udp_handler(self):
+        """Get or create UDP handler"""
+        if not self.udp_handler and self.authenticated:
+            # Just create - all logic is inside udp_handler.py
+            from udp_handler import UDPHandler
+            self.udp_handler = UDPHandler(self, callback=self._on_udp_event)
+            self.udp_handler.start()  # Start listening
+        return self.udp_handler
+    
+    def _on_udp_event(self, event, transfer_id, data=None):
+        """Handle UDP events - just forward to UI"""
+        if event == 'progress':
+            self.interface.update_progress(transfer_id, data)
+        elif event == 'complete':
+            self.interface.transfer_complete(transfer_id, data)
+            self.udp_handler = None  # Clear reference
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", type=str, default="127.0.0.1")
