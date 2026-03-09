@@ -9,7 +9,7 @@ Arguments have a specified type to prevent bad DB interactions.
 """
 
 class Database:
-    DB_PATH = "chat_server.db"
+    DB_PATH = "server/server.db"
 
     def __init__(self):
         self._local = local()
