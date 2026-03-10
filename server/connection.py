@@ -67,13 +67,12 @@ class Connection:
         body = (payload or "").encode("utf-8")
         outgoing["length"] = len(body)
         header = json.dumps(outgoing).encode("utf-8")
-        
+
         self.server.log_outgoing(outgoing)
         self.socket.sendall(header + b"\n" + body)
 
     def close(self):
         self.server.log(f"CLOSING:{self.socket}, {self.loggedInAs}")
         self.socket.close()
-        sys.exit(0)
         if self in self.server.connections:
             self.server.connections.remove(self)
