@@ -240,7 +240,7 @@ class Protocol:
             
             if recipient_conn:
                 # if the useer is connected this means their  onlinne, therefore we'll continue with the process of sending them the text
-                self.server.log(f"handle_MSG: from={from_user}, chat_id={chat_id}, chat_type={chat_type}, recipient_conn={recipient_conn}")
+                #self.server.log(f"handle_MSG: from={from_user}, chat_id={chat_id}, chat_type={chat_type}, recipient_conn={recipient_conn}")
                 self.forward_message(recipient_conn, from_user, chat_id, "private", msg_id, timestamp, payload)
                 #self.MSG_DELIVERED(connection, msg_id, [recipient])
             else:
@@ -272,7 +272,7 @@ class Protocol:
                     member_conn = self.get_user_connection(member)
 
                     if member_conn:
-                        self.server.log(f"handle_MSG: from={from_user}, chat_id={chat_id}, chat_type={chat_type}, member_conn={member_conn}")
+                        #self.server.log(f"handle_MSG: from={from_user}, chat_id={chat_id}, chat_type={chat_type}, member_conn={member_conn}")
                         self.forward_message(member_conn, from_user, group_name, "group", msg_id, timestamp, payload)
 
                     else:
@@ -285,7 +285,7 @@ class Protocol:
             """
 
     def handle_CREATE_GROUP(self, connection, message):
-        self.server.log(f"handle_CREATE_GROUP called with: {message}")
+        #self.server.log(f"handle_CREATE_GROUP called with: {message}")
         if not connection.authenticated:
             self.CREATE_GROUP_ACK(connection, "fail", "You aren't logged in")
 
@@ -298,7 +298,7 @@ class Protocol:
             return
         
         self.server.database.create_group(group_name, username)
-        self.server.log(f"Group '{group_name}' created by {username}")
+        #self.server.log(f"Group '{group_name}' created by {username}")
 
         # This group will be added to the list of the user's groups their in
         self.CREATE_GROUP_ACK(connection, "success", f"Group '{group_name}' created!")
@@ -320,7 +320,7 @@ class Protocol:
             return
 
         self.server.database.add_group_member(group_name, username)
-        self.server.log(f"{username} joined '{group_name}'")
+        #self.server.log(f"{username} joined '{group_name}'")
         self.JOIN_GROUP_ACK(connection, "success", f"You joined '{group_name}'")
 
     def handle_GROUP_LIST(self, connection, message):
