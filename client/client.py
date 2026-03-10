@@ -4,6 +4,7 @@ from connection import Connection
 from protocol import Protocol
 from terminal import Terminal
 from database import Database
+import sys
 
 class Client:
     def __init__(self, host, port, interface):
@@ -61,7 +62,7 @@ class Client:
         self.interface.database = None
 
     def quit_program(self):
-        pass
+        sys.exit(0)
 
 def main():
     interface = Terminal()

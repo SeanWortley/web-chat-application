@@ -21,7 +21,7 @@ class Protocol:
         if handler:
             handler(connection, clientMessage)
         else: 
-            print(f"Unknown message: {clientMessage["message_name"]}")
+            self.server.log(f"Unknown message: {clientMessage["message_name"]}")
 
     def handle_AUTH(self, connection, message):
         username = message["data"]["username"]
@@ -150,7 +150,7 @@ class Protocol:
                 }
             })
 
-            print(f"Group '{group_name}' created with members: {valid_members}")
+            self.server.log(f"Group '{group_name}' created with members: {valid_members}")
     
     def CREATE_GROUP_FAIL(self, connection, error_message):
         connection.sendJson({
@@ -240,7 +240,7 @@ class Protocol:
             
             if recipient_conn:
                 # if the useer is connected this means their  onlinne, therefore we'll continue with the process of sending them the text
-                print(f"handle_MSG: from={from_user}, chat_id={chat_id}, chat_type={chat_type}, recipient_conn={recipient_conn}")
+                self.server.log(f"handle_MSG: from={from_user}, chat_id={chat_id}, chat_type={chat_type}, recipient_conn={recipient_conn}")
                 self.forward_message(recipient_conn, from_user, chat_id, "private", msg_id, timestamp, payload)
                 #self.MSG_DELIVERED(connection, msg_id, [recipient])
             else:
@@ -272,7 +272,7 @@ class Protocol:
                     member_conn = self.get_user_connection(member)
 
                     if member_conn:
-                        print(f"handle_MSG: from={from_user}, chat_id={chat_id}, chat_type={chat_type}, member_conn={member_conn}")
+                        self.server.log(f"handle_MSG: from={from_user}, chat_id={chat_id}, chat_type={chat_type}, member_conn={member_conn}")
                         self.forward_message(member_conn, from_user, group_name, "group", msg_id, timestamp, payload)
 
                     else:
@@ -285,7 +285,7 @@ class Protocol:
             """
 
     def handle_CREATE_GROUP(self, connection, message):
-        print(f"handle_CREATE_GROUP called with: {message}")
+        self.server.log(f"handle_CREATE_GROUP called with: {message}")
         if not connection.authenticated:
             self.CREATE_GROUP_ACK(connection, "fail", "You aren't logged in")
 
