@@ -1,12 +1,9 @@
 from ast import main
-from re import T
 from socket import *
-from hashlib import sha256
 from connection import Connection
 from protocol import Protocol
 from database import Database
 import argparse
-import os
 
 
 
