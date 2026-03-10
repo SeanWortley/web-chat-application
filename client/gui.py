@@ -91,8 +91,8 @@ class GUI:
         menu_frame = tk.Frame(self.root, padx=20, pady=20)
         menu_frame.pack(side=tk.LEFT, fill=tk.Y)
         
-        tk.Label(menu_frame, text=f"Logged in as: {self.username}", font=("Courier", 10)).pack(pady=5)
-        tk.Label(menu_frame, text="MAIN MENU", font=("Courier", 14, "bold")).pack(pady=10)
+        tk.Label(menu_frame, text=f"Logged in as: {self.username}", font=("Arial", 10)).pack(pady=5)
+        tk.Label(menu_frame, text="MAIN MENU", font=("Arial", 14, "bold")).pack(pady=10)
         
         buttons = [
             ("1. Private Chat", self.start_private_chat),

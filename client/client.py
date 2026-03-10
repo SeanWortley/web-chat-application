@@ -5,6 +5,7 @@ import threading
 from connection import Connection
 from protocol import Protocol
 from gui import GUI
+from terminal import Terminal
 
 class Client:
     def __init__(self, host, port, interface):
@@ -105,7 +106,8 @@ class Client:
         pass
 
 def main():
-    interface = GUI()
+    #interface = GUI()
+    interface = Terminal()
     client = Client("127.0.0.1", 12000, interface)
     
     # Start client in background thread

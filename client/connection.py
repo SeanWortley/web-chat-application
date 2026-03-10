@@ -1,6 +1,8 @@
 import json
 from queue import Queue
 from threading import Thread
+import socket
+import traceback
 
 class Connection:
     def __init__(self, socket, client):
@@ -36,8 +38,10 @@ class Connection:
         encoded = (json.dumps(outgoing)+"\n").encode()
         self.socket.send(encoded)
 
-    def close(self):
-        if not self.socket._closed:
-            import traceback
-            traceback.print_stack()
+    
+
+    def close(self): 
+        if not self.socket._closed: 
+            import traceback 
+            traceback.print_stack() 
             self.socket.close()
