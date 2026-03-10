@@ -11,45 +11,40 @@ Arguments have a specified type to prevent bad DB interactions.
 class Database:
     DB_PATH = "server/server.db"
 
-    def _init__(self):
+    def __init__(self):
         self.local = local()
         self.initialise()
     
     def initialise(self):
         connection = self.get_connection()
         connection.executescript("""
-        CREATE TABLE IF NOT EXISTS users (
-            username        TEXT    PRIMARY KEY,
-            hashed_password TEXT    NOT NULL
-        );
-        CREATE TABLE IF NOT EXISTS chat_groups (
-            group_name  TEXT    PRIMARY KEY,
-            owner       TEXT    NOT NULL,
-            FOREIGN KEY (owner) REFERENCES users(username)
-        );
-        CREATE TABLE IF NOT EXISTS group_members (
-            group_name  TEXT    NOT NULL,
-            username    TEXT    NOT NULL,
-            PRIMARY KEY (group_name, username),
-            FOREIGN KEY (group_name) REFERENCES chat_groups(group_name),
-            FOREIGN KEY (username)   REFERENCES users(username)
-        );
-        CREATE TABLE IF NOT EXISTS offline_messages (
-            msg_id      TEXT    NOT NULL,
-            sender      TEXT    NOT NULL,
-            chat_id     TEXT    NOT NULL,
-            chat_type   TEXT    NOT NULL,        
-            group_id    TEXT,
-            msg_text    TEXT    NOT NULL,
-            timestamp   TEXT    NOT NULL,
-            PRIMARY KEY (msg_id, chat_id),
-            FOREIGN KEY (sender) REFERENCES users(username)
-        );
-        CREATE TABLE IF NOT EXISTS pending_recipients (
-            msg_id      TEXT    NOT NULL,
-            chat_id     TEXT    NOT NULL,
-            recipient   TEXT    NOT NULL
-        );
+            CREATE TABLE IF NOT EXISTS users (
+                username        TEXT    PRIMARY KEY,
+                hashed_password TEXT    NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS chat_groups (
+                group_name  TEXT    PRIMARY KEY,
+                owner       TEXT    NOT NULL,
+                FOREIGN KEY (owner) REFERENCES users(username)
+            );
+            CREATE TABLE IF NOT EXISTS group_members (
+                group_name  TEXT    NOT NULL,
+                username    TEXT    NOT NULL,
+                PRIMARY KEY (group_name, username),
+                FOREIGN KEY (group_name) REFERENCES chat_groups(group_name),
+                FOREIGN KEY (username)   REFERENCES users(username)
+            );
+            CREATE TABLE IF NOT EXISTS offline_messages (
+                msg_id      TEXT    NOT NULL,
+                sender      TEXT    NOT NULL,
+                chat_id     TEXT    NOT NULL,
+                chat_type   TEXT    NOT NULL,        
+                group_id    TEXT,
+                msg_text    TEXT    NOT NULL,
+                timestamp   TEXT    NOT NULL,
+                PRIMARY KEY (msg_id, chat_id),
+                FOREIGN KEY (sender) REFERENCES users(username)
+            );
         """)
         connection.execute("PRAGMA foreign_keys = ON")
         connection.commit()
