@@ -158,12 +158,33 @@ class Terminal:
         else:
             print(f'\n{from_user}: {data.get("payload")}\n>> ', end="")
 
+    def load_private_logs(self, chat_id):
+        logs = self.database.get_private_chat_history(chat_id) #Dictionary
+        for message in logs:
+            from_user = message.get("from_user")
+            msg_text = message.get("msg_text")
+            sender = ">> " if (from_user == self.loggedInAs) else f"{from_user}: "
+            print(sender + msg_text)
+        print("-------------------------------------")
+        
+    def load_group_logs(self, chat_id):
+        logs = self.database.get_group_chat_history(chat_id)
+        for message in logs:
+            from_user = message.get("from_user")
+            msg_text = message.get("msg_text")
+            sender = ">> " if (from_user == self.loggedInAs) else f"{from_user}: "
+            print(sender + msg_text)
+        print("-------------------------------------")
+
     def start_private_chat(self):
         recipient = input("Who would you like to chat with?\n> ")
         self.current_chat = recipient
 
         self.chatting_mode = True
         print(f"Entered private chat room with {recipient}\n/exit to leave")
+    
+        self.load_private_logs(recipient)
+            
         self.process_unread_in_current_chat()
         text = input(">> ")
         while text != "/exit":
@@ -186,6 +207,9 @@ class Terminal:
 
         self.chatting_mode = True
         print(f"Entered {group} chat room \n/exit to leave")
+
+        self.load_group_logs(group)
+
         self.process_unread_in_current_chat()
         text = input(">> ")
         while text != "/exit":

@@ -50,9 +50,11 @@ class Client:
                 pass
     def assign_db(self):
         self.database = Database(self.loggedInAs)
+        self.interface.database = self.database
 
     def unassign_db(self):
         self.database = None
+        self.interface.database = None
 
 def main():
     interface = Terminal()

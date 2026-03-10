@@ -107,5 +107,35 @@ class Database:
             print(f"DB error: {e}")
             return False
 
-    def get_chat_history(self, chat_id):
-        pass
+    # THIS IS FOR INTERFACE IMPLEMENTATION
+    def get_private_chat_history(self, chat_id):
+        chat_history = self.get_connection().execute("""
+            SELECT * FROM private_messages 
+            WHERE chat_id = ?
+            ORDER BY timestamp ASC         
+         """, (chat_id,)).fetchall()
+        return [dict(row) for row in chat_history]
+    
+    def get_group_chat_history(self, chat_id):
+        chat_history = self.get_connection().execute("""
+            SELECT * FROM group_messages
+            WHERE chat_id = ?
+            ORDER BY timestamp ASC
+        """, (chat_id,)).fetchall()
+        return [dict(row) for row in chat_history]
+    
+    # Call this method when developing the gui
+    # Returns a list of dictionaries, each representing a chat
+    # Example dictionary in the list:
+    # {"chat_id": "sande", "chat_type": "private"}
+    # {"chat_id": "team", "chat_type": "group"}
+    def get_chats(self):
+
+        command = ("""
+            SELECT chat_id, 'private' as chat_type FROM private_chats
+            UNION
+            SELECT chat_id, 'group' as chat_type FROM group_chats
+        """)
+
+        result = self.get_connection().execute(command).fetchall()
+        return [dict(row) for row in result]

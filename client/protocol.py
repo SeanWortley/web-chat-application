@@ -35,6 +35,7 @@ class Protocol:
         self.client.interface.logged_in = True
         self.client.authenticated = True
         self.client.loggedInAs = message.get("from")
+        self.client.interface.loggedInAs = message.get("from")
         self.client.assign_db()
 
         self.client.interface.display(message["data"]["welcome_message"])
@@ -51,8 +52,13 @@ class Protocol:
         self.client.interface.display(message["data"]["welcome_message"])
         self.client.interface.logged_in = True
         self.client.loggedInAs = message.get("from")
+        self.client.interface.loggedInAs = message.get("from")
+        self.client.assign_db()
         self.client.interface.show_logged_in_menu()
         self.client.interface.resume()
+
+        
+        
 
     def handle_CREATE_ACCOUNT_FAIL(self, connection, message):
         self.client.interface.display(message["data"]["error_message"])
@@ -64,6 +70,7 @@ class Protocol:
         self.client.authenticated = False
         self.client.loggedInAs = None
         self.client.unassign_db()
+        self.client.interface.loggedInAs = None
         self.client.interface.show_logged_out_menu()
         self.client.interface.resume()
 
