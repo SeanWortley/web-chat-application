@@ -22,7 +22,7 @@ class Terminal:
         self.running = True
         self.logged_in = False
         self.chatting_mode = False
-
+        self.response_status = False
 
         self.unread_messages = {}
         self.current_chat = None # Is either 'from' or 'group_name' depending on chat type
@@ -202,7 +202,7 @@ class Terminal:
         self.process_unread_in_current_chat()
         text = input(">> ")
         while text != "/exit":
-            if text == "/mdt":
+            if text.startswith("/mdt"):
                 parts = text.split(maxsplit=1)
 
                 if(len(parts)) == 1:
@@ -212,6 +212,11 @@ class Terminal:
                 # "/mdt /path/to/file" - use provided path
                     filepath = parts[1].strip()
                 self.send_media_offer(recipient, filepath, chat_type= "private")
+            elif text.startswith("/accept"):
+                 self.set_status(True)
+                
+            elif text.startswith("/reject"):
+                self.set_status(False)
             else:
                 self.on_user_input({
                     "message_name": "MSG",
@@ -377,32 +382,30 @@ class Terminal:
                     "chat_type": chat_type,
             }  
         })
+    def get_status(self):
+       if self.response_status == True:
+           print("Accepted")
+       else:
+           print("Rejected")
+
+    def set_status(self, status):
+        self.response_status = status
 
     def send_media_response(self, connection, message):
         data = message.get("data", {})
-        answer = input(f"{data.get("chat_id")} wants to send you {data.get("filename")}!\nDo you Accept or Reject: ")
-        if answer.lower() == "accepted": 
-            self.on_user_input({
-            "message_name": "MEDIA_RESPONSE",
-            "data": {
-                    "chat_id": data.get("from"),
-                    "chat_type": data.get("chat_type"),
-                    "status": "Accepted",
-                    "transfer_id": data.get("transfer_id")
-            }  
-        })
-        else:
-            self.on_user_input({
-            "message_name": "MEDIA_RESPONSE",
-            "data": {
-                    "chat_id": data.get("from"),
-                    "chat_type": data.get("chat_type"),
-                    "status": "Rejected",
-                    "transfer_id": data.get("transfer_id")
-            }  
-        })
-    
-    
+
+        print(f"\n{data.get('from')} wants to send you {data.get('filename')}!")
+        print(f"Type: /accept {data.get("filename")} or /reject {data.get("filename")}")
+        
+        status = self.get_status()
+        self.on_user_input({
+                "message_name": "MEDIA_RESPONSE",
+                "data": {
+                    "status": status,
+                    "transfer_id": message.get("transfer_id")
+                }
+            })
+
 
 
     def send_message(self, recipient, message):

@@ -59,16 +59,18 @@ class Client:
             case "GROUP_LIST":
                 self.protocol.GROUP_LIST(self.connection)
             case "MEDIA_OFFER":
-                handler = self.get_udp_handler() 
-                port = handler.get_port() if handler else None
+                #handler = self.get_udp_handler() 
+                #port = handler.get_port() if handler else None
 
                 input["data"]["from"] = self.username
-                input["data"]["transfer_id"] = f"msg_{int(time.time())}"
-                input["data"]["sender_port"] = port
+                input["data"]["transfer_id"] = f"transferID_{int(time.time())}"
+                input["data"]["sender_port"] = 88888
                 self.protocol.media_offer(self.connection,
                             input["data"]["chat_id"],
                             input["data"]["filepath"],
-                            input["data"]["chat_type"],)
+                            input["data"]["chat_type"],
+                            input["data"]["sender_port"])
+                
             case "MEDIA_RESPONSE":
                 handler = self.get_udp_handler() 
                 port = handler.get_port() if handler else None
