@@ -8,6 +8,7 @@ class Connection:
     def __init__(self, socket, client):
         self.client = client
         self.socket = socket
+        self.running = True
 
     def start(self):
         Thread(target=self.listen).start()
@@ -25,7 +26,8 @@ class Connection:
                     try:
                         message, index = json.JSONDecoder().raw_decode(buffer)
                         buffer = buffer[index:].lstrip()
-                        self.client.protocol.handleIncoming(self, message)
+                        if self.client and hasattr(self.client, 'protocol'):
+                            self.client.protocol.handleIncoming(self, message)
                     except json.JSONDecodeError:
                         break  # Wait for more data
         except Exception as e:
@@ -41,7 +43,10 @@ class Connection:
     
 
     def close(self): 
-        if not self.socket._closed: 
-            import traceback 
-            traceback.print_stack() 
-            self.socket.close()
+        self.running = False
+        if hasattr(self, 'socket') and self.socket and not self.socket._closed:
+            try:
+                self.socket.close()
+            except Exception as e:
+                pass
+            

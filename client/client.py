@@ -106,8 +106,8 @@ class Client:
         pass
 
 def main():
-    #interface = GUI()
-    interface = Terminal()
+    interface = GUI()
+    #interface = Terminal()
     client = Client("127.0.0.1", 12000, interface)
     
     # Start client in background thread

@@ -171,24 +171,32 @@ class Protocol:
     def handle_MSG(self, connection, message):
     #Display incoming message
         #print("Ekse, you have a new message coming through")
-        data = message["data"]
-        from_user = data.get("from")
-        chat_id = data.get("chat_id")
-        chat_type = data.get("chat_type")
-        payload = data.get("payload")
-
-        #print(f"handle_MSG: from={from_user}, chat_id={chat_id}, chat_type={chat_type}, current_chat={self.client.interface.current_chat}")
-
-
-        if chat_type == "private":
-            channel = from_user
-        elif chat_type == "group":
-            channel = chat_id
-        else:
-            print("Unkown chat type:", chat_type)
-
-        #print(f"channel={channel}, current_chat={self.client.interface.current_chat}")
-        self.client.interface.process_msg(message, channel)
+        try:
+            data = message.get("data", {})
+            from_user = data.get("from")
+            chat_id = data.get("chat_id")
+            chat_type = data.get("chat_type")
+            payload = data.get("payload")
+            
+            # Don't process if it's our own message 
+            if from_user == self.client.username:
+                return
+            
+            # Determine the channel for this message
+            if chat_type == "private":
+                channel = from_user
+            elif chat_type == "group":
+                channel = chat_id
+            else:
+                print("Unknown chat type:", chat_type)
+                return
+            
+            # Pass to interface for display
+            if hasattr(self.client, 'interface') and self.client.interface:
+                self.client.interface.process_msg(message, channel)
+                
+        except Exception as e:
+            print(f"Error handling incoming message: {e}")
 
         """
         if chat_type == "private":

@@ -1,4 +1,6 @@
 # client/gui.py
+from pydoc import text
+from pydoc import text
 import tkinter as tk
 from tkinter import scrolledtext, simpledialog, messagebox
 from hashlib import sha256
@@ -87,7 +89,9 @@ class GUI:
         for widget in self.root.winfo_children():
             widget.destroy()
         
-        
+        self.current_chat = None  # Reset current chat
+        self.chatting_mode = False
+
         menu_frame = tk.Frame(self.root, padx=20, pady=20)
         menu_frame.pack(side=tk.LEFT, fill=tk.Y)
         
@@ -187,6 +191,7 @@ class GUI:
         # Opens a new chat window for either a private or group chat. It takes the chat_id (username = private chats and the group name = group chats).
         if chat_id in self.chat_windows:
             self.chat_windows[chat_id].lift()
+            self.current_chat = chat_id
             return
         
         window = tk.Toplevel(self.root)
@@ -195,7 +200,8 @@ class GUI:
         
         # Store reference to this chat window so we can update it with new messages or show notifications if there are unread messages for this chat.
         self.chat_windows[chat_id] = window
-        
+        self.current_chat = chat_id
+
         # This where the messags will actually be displayed in the chat window.
         chat_display = scrolledtext.ScrolledText(window, width=60, height=20, state='normal')
         chat_display.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
@@ -224,22 +230,27 @@ class GUI:
         def on_close():
             if chat_id in self.chat_windows:
                 del self.chat_windows[chat_id]
+            if self.current_chat == chat_id:
+                self.current_chat = None
             window.destroy()
         
         window.protocol("WM_DELETE_WINDOW", on_close)
     
     def send_chat_message(self, entry, chat_id, chat_type, display):
-        #Triggered when the user clicks the send button or presses Enter in the chat input field.
+    # Triggered when the user clicks the send button or presses Enter in the chat input field.
         text = entry.get()
         if not text:
             return
-        
-        # Displays the sent message immediately in the chat window for the user to see.
+    
+    # Make sure current_chat is set to this chat
+        self.current_chat = chat_id
+    
+    # Displays the sent message immediately in the chat window for the user to see.
         display.insert(tk.END, f"You: {text}\n")
         display.see(tk.END)
         entry.delete(0, tk.END)
-        
-        # Sends the message to the server using the on_user_input callback.
+    
+    # Sends the message to the server using the on_user_input callback.
         if self.on_user_input:
             self.on_user_input({
                 "message_name": "MSG",
@@ -249,7 +260,7 @@ class GUI:
                     "payload": text
                 }
             })
-    
+
     def view_groups(self):
         # Triggered when the user clicks the "View Groups" button. A request will be sent to the server to get the list of groups that the user is a member of, and then display that list in a message box.
         if self.on_user_input:
@@ -290,41 +301,53 @@ class GUI:
         self.message_queue.put({"type": "message", "data": message})
     
     def _handle_incoming_message(self, message):
-        # Processes incoming messages and determines where to display them.
+    # Processes incoming messages and determines where to display them.
         data = message.get("data", {})
         from_user = data.get("from")
         chat_id = data.get("chat_id")
         chat_type = data.get("chat_type")
         payload = data.get("payload")
-        
-        # Determine which chat this message belongs to based on the chat type.
+    
+    # Determine which chat this message belongs to based on the chat type.
         if chat_type == "private":
-            target_chat = from_user
+            target_chat = from_user  # For private messages, the chat is identified by the sender
         else:
-            target_chat = chat_id
-        
-        # If chat window is open, show message there
+            target_chat = chat_id  # For group messages, use the group name
+    
+    # If chat window is open, show message there
         if target_chat in self.chat_windows:
             window = self.chat_windows[target_chat]
-           
+        
+        # Find the ScrolledText widget in the window
             for child in window.winfo_children():
                 if isinstance(child, scrolledtext.ScrolledText):
                     child.insert(tk.END, f"{from_user}: {payload}\n")
                     child.see(tk.END)
                     return
-        
+        # Also try to find it in nested frames
+            for child in window.winfo_children():
+                if isinstance(child, tk.Frame):
+                    for grandchild in child.winfo_children():
+                        if isinstance(grandchild, scrolledtext.ScrolledText):
+                            grandchild.insert(tk.END, f"{from_user}: {payload}\n")
+                            grandchild.see(tk.END)
+                            return
+    
         # Otherwise store as unread
         if target_chat not in self.unread_messages:
             self.unread_messages[target_chat] = []
-        
+    
         self.unread_messages[target_chat].append({
             "from": from_user,
             "payload": payload
-        })
-        
-        # Show notification in main window
+    })
+    
+    # Show notification in main window
         if hasattr(self, 'output_area'):
-            self.output_area.insert(tk.END, f"\n New message from {from_user}\n")
+            notification = f"\n New message from {from_user}"
+            if chat_type == "group":
+                notification = f"\n New message in {chat_id} from {from_user}"
+            self.output_area.insert(tk.END, notification + "\n")
             self.output_area.see(tk.END)
     
     def process_unsent_batch(self, groups):
