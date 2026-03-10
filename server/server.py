@@ -37,7 +37,15 @@ class Server:
     
     def log(self, message):
         if self.verbose:
-            print(f"log: {message}")
+            print(f"GENERAL: {message}")
+    
+    def log_incoming(self, message):
+        if self.verbose:
+            print(f"INCOMING: {message}")
+        
+    def log_outgoing(self, message):
+        if self.verbose:
+            print(f"OUTGOING: {message}")
 
 
 def main():
