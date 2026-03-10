@@ -316,13 +316,13 @@ class Protocol:
 
         if message_name == "MEDIA_OFFER":
             # Store it regardless on online status
-            self.media_queue.add_offer(
+            self.add_offer(
                 transfer_id=ctx["transfer_id"],
                 sender=ctx["from_user"],
                 sender_port=ctx["sender_port"],
                 recipient=ctx["chat_id"])
         
-        if message_name == "MEDIA_OFFER":
+        if target_conn:
 
             print(f"handle_MSG: from={ctx['from_user']}, chat_id={ctx['chat_id']}, chat_type={ctx['chat_type']}, target_conn={target_conn}")
 
@@ -336,7 +336,7 @@ class Protocol:
                 ctx["filesize"],
                 ctx["sender_port"]
             )
-
+            print("Succesfullt sent to receiver")
         elif target_conn and message_name == "MEDIA_RESPONSE":
             pass
 

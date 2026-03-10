@@ -191,13 +191,14 @@ class Protocol:
 
         # Validate path
         file_path = Path(filepath)
-        if not file_path.exists() and not file_path.isfile(filepath):
+        if not file_path.exists():
+            print("Checking:", file_path.resolve())
             print(f"File not found: {filepath}")
             return
     
         filename = file_path.name
         filesize = file_path.stat().st_size
-        transfer_id = f"msg_{int(time.time())}"
+        transfer_id = f"transferID_{int(time.time())}"
 
         connection.sendJson({
             "message_name": "MEDIA_OFFER",
@@ -215,6 +216,7 @@ class Protocol:
 
 
     def handle_incoming_media_offer(self, connection, message):
+        self.client.interface.display("Your offer arrived")
         self.client.interface.send_media_response(connection, message)
     
     def media_response(self, connection, chat_id, chat_type, status, transfer_id, receiver_port):
