@@ -183,18 +183,16 @@ class Protocol:
             self.client.database.store_group_message(outgoing, False)
         connection.sendJson(outgoing)
 
-
+        
     def handle_MSG(self, connection, message):
-    #Display incoming message
         #print("Ekse, you have a new message coming through")
-        data = message["data"]
+        data = message.get("data", {})
         from_user = data.get("from")
         chat_id = data.get("chat_id")
         chat_type = data.get("chat_type")
-        payload = data.get("payload")
 
-        #print(f"handle_MSG: from={from_user}, chat_id={chat_id}, chat_type={chat_type}, current_chat={self.client.interface.current_chat}")
-
+        if from_user == self.client.username:
+            return
 
         if chat_type == "private":
             channel = from_user
@@ -203,9 +201,9 @@ class Protocol:
             channel = chat_id
             self.client.database.store_group_message(message)
         else:
-            print("Unkown chat type:", chat_type)
+            print("Unknown chat type:", chat_type)
+            return
 
-        #print(f"channel={channel}, current_chat={self.client.interface.current_chat}")
         self.client.interface.process_msg(message, channel)
 
         """

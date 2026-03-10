@@ -9,6 +9,7 @@ class Connection:
         self.server = server
         self.authenticated = False
         self.loggedInAs = None
+        self.running = True
 
     def start(self):
         thread = Thread(target=self.listen)
@@ -72,7 +73,13 @@ class Connection:
         self.socket.sendall(header + b"\n" + body)
 
     def close(self):
+        self.running = False
         self.server.log(f"CLOSING:{self.socket}, {self.loggedInAs}")
-        self.socket.close()
+        if hasattr(self, 'socket') and self.socket and not self.socket._closed:
+            try:
+                self.socket.close()
+            except:
+                pass
         if self in self.server.connections:
             self.server.connections.remove(self)
+
