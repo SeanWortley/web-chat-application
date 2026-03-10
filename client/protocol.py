@@ -198,22 +198,7 @@ class Protocol:
 
 
     def handle_incoming_media_offer(self, connection, message):
-        data = message.get("data", {})
-        self.client.interface.display(f"{data.get("chat_id")} wants to send you {data.get("filename")}!")
-        answer = self.client.interface.accept_or_reject_offer()
-
-        if answer.lower() == "accept":
-            self.accepted_media_response(connection, message)
-        else:
-            self.rejected_media_response(connection, message)
-
-    def accepted_media_response():
-        pass
-
-    def rejected_media_response(self, message):
-        data = message.get("data", {})
-        
-        
+        self.client.interface.send_media_response(connection, message)
     
     def media_response(self, connection, chat_id, chat_type, status, transfer_id, receiver_port):
         connection.sendJson({
@@ -228,7 +213,13 @@ class Protocol:
 
             } 
         })
-        pass
+    
+    def handle_incoming_media_response(self, connection, message):
+        data = message.get("data", {})
+        if(data.get("status").lower() == "accepted"):
+            print("Your offer was accepted, media sent :) ")
+        else:
+            print("Your offer was rejected, media not sent :( ")
     
     def handle_MSG(self, connection, message):
     #Display incoming message
