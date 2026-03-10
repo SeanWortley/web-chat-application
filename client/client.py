@@ -9,6 +9,7 @@ from database import Database
 import argparse
 import sys
 from gui import GUI
+from terminal import Terminal
 
 
 class Client:
