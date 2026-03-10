@@ -4,6 +4,7 @@ from connection import Connection
 from protocol import Protocol
 from terminal import Terminal
 from database import Database
+import argparse
 import sys
 
 class Client:
@@ -65,8 +66,18 @@ class Client:
         sys.exit(0)
 
 def main():
-    interface = Terminal()
-    client = Client("127.0.0.1", 12000, interface)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--host", type=str, default="127.0.0.1")
+    parser.add_argument("--port", type=int, default=12000)    
+    parser.add_argument("--gui", type=bool, default=False)
+    args = parser.parse_args()
+    print(args)
+
+    if args.gui:
+        pass
+    else:
+        interface = Terminal()
+    client = Client(args.host, args.port, interface)
 
 if __name__ == "__main__":
     main()
