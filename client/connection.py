@@ -8,7 +8,9 @@ class Connection:
         self.socket = socket
 
     def start(self):
-        Thread(target=self.listen).start()
+        thread = Thread(target=self.listen)
+        thread.daemon = True
+        thread.start()
 
     def listen(self):
         try:
@@ -39,5 +41,5 @@ class Connection:
     def close(self):
         if not self.socket._closed:
             import traceback
-            traceback.print_stack()
+            #traceback.print_stack()
             self.socket.close()

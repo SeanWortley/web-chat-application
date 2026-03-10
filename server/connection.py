@@ -1,5 +1,6 @@
 import json
 from threading import Thread
+import sys
 
 class Connection:
     def __init__(self, socket, server):
@@ -9,7 +10,9 @@ class Connection:
         self.loggedInAs = None
 
     def start(self):
-        Thread(target=self.listen).start()
+        thread = Thread(target=self.listen)
+        thread.daemon = True
+        thread.start() 
 
     def listen(self):
         try:
@@ -24,7 +27,7 @@ class Connection:
                     try:
                         message, index = json.JSONDecoder().raw_decode(buffer)
                         buffer = buffer[index:].lstrip()
-                        print(message)
+                        self.server.log(message)
                         self.server.protocol.handleIncoming(self, message)
                     except json.JSONDecodeError:
                         break  # Wait for more data
@@ -37,7 +40,8 @@ class Connection:
         self.socket.send(encoded)
 
     def close(self):
-        print(f"CLOSING:{self.socket}, {self.loggedInAs}")
+        self.server.log(f"CLOSING:{self.socket}, {self.loggedInAs}")
         self.socket.close()
+        sys.exit(0)
         if self in self.server.connections:
             self.server.connections.remove(self)

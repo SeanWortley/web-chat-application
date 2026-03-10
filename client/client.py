@@ -4,6 +4,7 @@ from connection import Connection
 from protocol import Protocol
 from terminal import Terminal
 from database import Database
+import sys
 
 class Client:
     def __init__(self, host, port, interface):
@@ -46,6 +47,10 @@ class Client:
                             input["data"]["chat_id"],
                             input["data"]["chat_type"],
                             input["data"]["payload"])
+            case "close_connection":
+                self.connection.close()
+            case "quit_program":
+                self.quit_program()
             case _:
                 pass
     def assign_db(self):
@@ -55,6 +60,9 @@ class Client:
     def unassign_db(self):
         self.database = None
         self.interface.database = None
+
+    def quit_program(self):
+        sys.exit(0)
 
 def main():
     interface = Terminal()

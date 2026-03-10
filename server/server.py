@@ -1,10 +1,13 @@
 from ast import main
+from re import T
 from socket import *
 from hashlib import sha256
 from connection import Connection
 from protocol import Protocol
 from database import Database
 import argparse
+import os
+
 
 
 class Server:    
@@ -22,7 +25,6 @@ class Server:
     def listen(self):
         while True:
             clientSocket, address = self.socket.accept()
-
             connection = Connection(clientSocket, self)
             self.connections.append(connection)  # track active connection
             connection.start()
@@ -35,14 +37,15 @@ class Server:
     
     def log(self, message):
         if self.verbose:
-            print(message)
+            print(f"log: {message}")
+
 
 def main():
     # Parse in arguements
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", type=str, default="127.0.0.1")
     parser.add_argument("--port", type=int, default=12000)
-    parser.add_argument("--verbose", type=bool, default=False)
+    parser.add_argument("--verbose", type=bool, default=True)
     args = parser.parse_args()
     print(args.host, args.port, args.verbose)
 
