@@ -115,6 +115,17 @@ class Client:
                             input["data"]["chat_id"],
                             input["data"]["filepath"],
                             input["data"]["chat_type"],)
+            case "MEDIA_RESPONSE":
+                handler = self.get_udp_handler() 
+                port = handler.get_port() if handler else None
+
+                input["data"]["from"] = self.username
+                input["data"]["receiver_port"] = port
+                self.protocol.media_response(self.connection,
+                            input["data"]["chat_id"],
+                            input["data"]["chat_type"],
+                            input["data"]["status"],
+                            input["data"]["transfer"],)
             case "close_connection":
                 self.connection.close()
             case "quit_program":

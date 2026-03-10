@@ -400,6 +400,31 @@ class Terminal:
                     "chat_type": chat_type,
             }  
         })
+
+    def send_media_response(self, connection, message):
+        data = message.get("data", {})
+        answer = input(f"{data.get("chat_id")} wants to send you {data.get("filename")}!\nDo you Accept or Reject: ")
+        if answer.lower() == "accepted": 
+            self.on_user_input({
+            "message_name": "MEDIA_RESPONSE",
+            "data": {
+                    "chat_id": data.get("from"),
+                    "chat_type": data.get("chat_type"),
+                    "status": "Accepted",
+                    "transfer_id": data.get("transfer_id")
+            }  
+        })
+        else:
+            self.on_user_input({
+            "message_name": "MEDIA_RESPONSE",
+            "data": {
+                    "chat_id": data.get("from"),
+                    "chat_type": data.get("chat_type"),
+                    "status": "Rejected",
+                    "transfer_id": data.get("transfer_id")
+            }  
+        })
+    
     
 
 
@@ -424,7 +449,3 @@ class Terminal:
 
     def print_current(self):
         print(f"Chatting with {self.current_chat}")
-
-    def accept_or_reject_offer(self):
-        answer = input("Enter accept or reject: ")
-        return answer
