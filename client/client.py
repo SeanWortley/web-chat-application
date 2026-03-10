@@ -3,13 +3,14 @@ import time
 from connection import Connection
 from protocol import Protocol
 from terminal import Terminal
+from database import Database
 
 class Client:
     def __init__(self, host, port, interface):
         self.socket = socket(AF_INET, SOCK_STREAM)
         self.socket.connect((host, port))
 
-        self.username = None
+        self.loggedInAs = None
         self.authenticated = False
 
         self.interface = interface
@@ -38,7 +39,7 @@ class Client:
             case "GROUP_LIST":
                 self.protocol.GROUP_LIST(self.connection)
             case "MSG":  
-                input["data"]["from"] = self.username
+                input["data"]["from"] = self.loggedInAs
                 input["data"]["msg_id"] = f"msg_{int(time.time())}"
                 input["data"]["timestamp"] = time.time()
                 self.protocol.MSG(self.connection, 
@@ -47,6 +48,11 @@ class Client:
                             input["data"]["payload"])
             case _:
                 pass
+    def assign_db(self):
+        self.database = Database(self.loggedInAs)
+
+    def unassign_db(self):
+        self.database = None
 
 def main():
     interface = Terminal()

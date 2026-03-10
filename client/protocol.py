@@ -34,7 +34,8 @@ class Protocol:
     def handle_AUTH_OK(self, connection, message):
         self.client.interface.logged_in = True
         self.client.authenticated = True
-        self.client.username = message.get("from")
+        self.client.loggedInAs = message.get("from")
+        self.client.assign_db()
 
         self.client.interface.display(message["data"]["welcome_message"])
         self.REQUEST_UNSENT_MESSAGES(connection)
@@ -49,7 +50,7 @@ class Protocol:
     def handle_CREATE_ACCOUNT_OK(self, connection, message):
         self.client.interface.display(message["data"]["welcome_message"])
         self.client.interface.logged_in = True
-        self.client.username = message.get("from")
+        self.client.loggedInAs = message.get("from")
         self.client.interface.show_logged_in_menu()
         self.client.interface.resume()
 
@@ -62,6 +63,7 @@ class Protocol:
         self.client.interface.display(message["data"]["goodbye_message"])
         self.client.authenticated = False
         self.client.loggedInAs = None
+        self.client.unassign_db()
         self.client.interface.show_logged_out_menu()
         self.client.interface.resume()
 
@@ -154,19 +156,25 @@ class Protocol:
         msg_id = str(uuid.uuid4())
         timestamp = time.time()
         
-        connection.sendJson({
+        outgoing = {
             "message_name": "MSG",
             "data": {
                 "type": "DATA",
-                "from": self.client.username,
+                "from": self.client.loggedInAs,
                 "chat_id": chat_id,
                 "chat_type": chat_type,
                 "msg_id": msg_id,
                 "timestamp": timestamp,
                 "payload": text
             }
-            
-        })
+        }
+
+        if chat_type == "private":
+            self.client.database.store_private_message(outgoing, False)
+        
+        if chat_type == "group":
+            self.client.database.store_group_message(outgoing, False)
+        connection.sendJson(outgoing)
 
 
     def handle_MSG(self, connection, message):
@@ -183,8 +191,10 @@ class Protocol:
 
         if chat_type == "private":
             channel = from_user
+            self.client.database.store_private_message(message)
         elif chat_type == "group":
             channel = chat_id
+            self.client.database.store_group_message(message)
         else:
             print("Unkown chat type:", chat_type)
 
