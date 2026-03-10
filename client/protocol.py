@@ -1,6 +1,7 @@
 from hashlib import sha256
 import time
 from tokenize import group
+import uuid
 
 class Protocol:
     def __init__(self, client):
@@ -150,7 +151,7 @@ class Protocol:
         })
 
     def MSG(self, connection, chat_id, chat_type, text):
-        msg_id = f"msg_{int(time.time())}"
+        msg_id = str(uuid.uuid4())
         timestamp = time.time()
         
         connection.sendJson({

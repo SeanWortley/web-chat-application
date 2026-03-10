@@ -27,18 +27,20 @@ class Database:
                 PRIMARY KEY (chat_id)
             );
             CREATE TABLE IF NOT EXISTS private_messages (
+                msg_id      TEXT    NOT NULL,
                 chat_id     TEXT    NOT NULL,
                 msg_text    TEXT    NOT NULL,
                 timestamp   TEXT    NOT NULL,
-                PRIMARY KEY (chat_id),
+                PRIMARY KEY (msg_id),
                 FOREIGN KEY (chat_id) REFERENCES private_chats(chat_id)
             );
             CREATE TABLE IF NOT EXISTS group_messages (
+            msg_id          TEXT    NOT NULL,
                 chat_id     TEXT    NOT NULL,
                 from_user   TEXT    NOT NULL,
                 msg_text    TEXT    NOT NULL,
                 timestamp   TEXT    NOT NULL
-                PRIMARY KEY (chat_id),
+                PRIMARY KEY (msg_id),
                 FOREIGN KEY (chat_id) REFERENCES group_chats(chat_id)
             );           
         """)
