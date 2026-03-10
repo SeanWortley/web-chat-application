@@ -12,7 +12,6 @@ class Terminal:
             "/register": self.register,
             "/logout": self.logout,
             "/msg": self.send_message,
-            "/quit": self.quit,
             "/current": self.print_current
         }
         self.on_user_input = None
@@ -64,6 +63,10 @@ class Terminal:
                 self.wait_event.clear()
                 self.join_group()
                 self.wait_event.wait()
+            
+            elif text == "/quit":
+                self.quit()
+                break
 
             elif text in self.commands:
                 command = self.commands.get(text)
@@ -281,6 +284,9 @@ class Terminal:
         self.logout()
         self.on_user_input({
             "message_name": "close_connection"
+        })
+        self.on_user_input({
+            "message_name": "quit_program"
         })
 
     def create_group(self):
