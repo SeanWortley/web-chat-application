@@ -435,3 +435,46 @@ class GUI:
     
     def show_logged_out_menu(self):
         self.root.after(0, self.show_login_screen)
+
+    def process_incorrect_recipient(self):
+        """Called when a private message recipient doesn't exist."""
+        # Find and close any chat window for the invalid recipient
+        if self.current_chat and self.current_chat in self.chat_windows:
+            chat_id = self.current_chat
+            window = self.chat_windows[chat_id]
+            del self.chat_windows[chat_id]
+            self.current_chat = None
+            self.root.after(0, lambda: [
+                messagebox.showerror("Error", "This user does not exist!"),
+                window.destroy()
+            ])
+        else:
+            self.root.after(0, lambda: messagebox.showerror("Error", "This user does not exist!"))
+
+    def process_incorrect_group(self):
+        """Called when a group chat target doesn't exist."""
+        if self.current_chat and self.current_chat in self.chat_windows:
+            chat_id = self.current_chat
+            window = self.chat_windows[chat_id]
+            del self.chat_windows[chat_id]
+            self.current_chat = None
+            self.root.after(0, lambda: [
+                messagebox.showerror("Error", "This group does not exist!"),
+                window.destroy()
+            ])
+        else:
+            self.root.after(0, lambda: messagebox.showerror("Error", "This group does not exist!"))
+
+    def process_not_group_member(self):
+        """Called when the user tries to message a group they're not in."""
+        if self.current_chat and self.current_chat in self.chat_windows:
+            chat_id = self.current_chat
+            window = self.chat_windows[chat_id]
+            del self.chat_windows[chat_id]
+            self.current_chat = None
+            self.root.after(0, lambda: [
+                messagebox.showerror("Error", "You are not a member of this group!"),
+                window.destroy()
+            ])
+        else:
+            self.root.after(0, lambda: messagebox.showerror("Error", "You are not a member of this group!"))
