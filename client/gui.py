@@ -180,11 +180,57 @@ class GUI:
         self.load_private_logs(recipient)
 
     def load_private_logs(self, chat_id):
+        print(f"load_private_logs: chat_id={chat_id}")
+        if not hasattr(self, 'database') or not self.database:
+            print("No database")
+            return
         logs = self.database.get_private_chat_history(chat_id)
+        #print(f"logs: {logs}")
+        if not logs:
+            return
+        
+        window = self.chat_windows.get(chat_id)
+        for child in window.winfo_children():
+            print(f"child: {type(child)}, {child}")
+        if not window:
+            return
+
         for message in logs:
             from_user = message.get("from_user")
             msg_text = message.get("msg_text")
-            sender = "You: " if (from_user == self.loggedInAs) else f"{from_user}: "
+            sender = "You" if from_user == self.loggedInAs else from_user
+
+            for child in window.winfo_children():
+                for grandchild in child.winfo_children():
+                    if isinstance(grandchild, scrolledtext.ScrolledText):
+                        grandchild.insert(tk.END, f"{sender}: {msg_text}\n")
+                        grandchild.see(tk.END)
+                        break
+
+    def load_group_logs(self, group_id):
+        print(f"load_group_logs: group_id={group_id}")
+        if not hasattr(self, 'database') or not self.database:
+            print("No database")
+            return
+        logs = self.database.get_group_chat_history(group_id)
+        if not logs:
+            return
+        
+        window = self.chat_windows.get(group_id)
+        if not window:
+            return
+
+        for message in logs:
+            from_user = message.get("from_user")
+            msg_text = message.get("msg_text")
+            sender = "You" if from_user == self.loggedInAs else from_user
+
+            for child in window.winfo_children():
+                for grandchild in child.winfo_children():
+                    if isinstance(grandchild, scrolledtext.ScrolledText):
+                        grandchild.insert(tk.END, f"{sender}: {msg_text}\n")
+                        grandchild.see(tk.END)
+                        break
     
     def start_group_chat(self):
         # Similar to the start_private_chat method, this will be called when the user clicks the "Group Chat" button. It will prompt the user to enter the name of the group they want to chat in and then open a new chat window for that group conversation.
@@ -195,6 +241,7 @@ class GUI:
         # Sets the current chat to the group name and will open a new chat window for this group conversation. 
         self.current_chat = group
         self.open_chat_window(group, "group")
+        self.load_group_logs(group)
     
     def open_chat_window(self, chat_id, chat_type):
         # Opens a new chat window for either a private or group chat. It takes the chat_id (username = private chats and the group name = group chats).
