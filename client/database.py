@@ -139,3 +139,25 @@ class Database:
 
         result = self.get_connection().execute(command).fetchall()
         return [dict(row) for row in result]
+    
+    def delete_private_chat_logs(self, user_id):
+        self.get_connection().execute(
+            "DELETE FROM private_messages WHERE chat_id = ?", (user_id,)
+        )
+        self.get_connection().commit()
+        self.get_connection().execute(
+            "DELETE FROM private_chats WHERE chat_id = ?", (user_id,)
+        )
+        self.get_connection().commit()
+        
+
+    def delete_group_chat_logs(self, group_name):
+        self.get_connection().execute(
+            "DELETE FROM group_messages WHERE chat_id = ?", (group_name,)
+        )
+        self.get_connection().commit()
+        self.get_connection().execute(
+            "DELETE FROM group_chats WHERE chat_id = ?", (group_name,)
+        )
+        self.get_connection().commit()
+        

@@ -228,9 +228,6 @@ class Protocol:
         Handles all incoming messages (private or group) and routes
         them to the correct handler based on message type.
         """
-        if not connection.authenticated:
-            self.bad_request_error(connection, "User isn't connected")
-            return
 
         # Safely parse message data
         message_name = message.get("message_name")
@@ -257,9 +254,17 @@ class Protocol:
             "receiver_port": data.get("receiver_port") 
         }
 
+        if not connection.authenticated:
+            self.MSG_NAK(connection, context.get("chat_id"), "User isn't authenticated")
+            return
+
+
         # Handle private messages
         if context["chat_type"] == "private":
             recipient = context["chat_id"]
+            if not self.server.database.get_user(context["chat_id"]):
+                self.MSG_NAK(connection, context.get("chat_id"), "Recipient doesn't exist")
+                return
             recipient_conn = self.get_user_connection(recipient)
             
             context.update({
@@ -276,11 +281,11 @@ class Protocol:
 
             # Validate group and membership
             if not self.server.database.get_group(group_name):
-                self.bad_request_error(connection, "Group doesn't exist")
+                self.MSG_NAK(connection, context.get("chat_id"), "Group doesn't exist")
                 return
 
             if not self.server.database.is_group_member(group_name, context["from_user"]):
-                self.bad_request_error(connection, "You're not in this group")
+                self.MSG_NAK(connection, context.get("chat_id"), "You're not in this group")
                 return
 
             # Send to all members except sender
@@ -538,11 +543,20 @@ class Protocol:
             "message_name": "MSG",
             "type": "DATA",
             "data": {
-            "from": from_user,
-            "chat_id": chat_id,
-            "chat_type": chat_type,
-            "msg_id": msg_id,
-            "timestamp": timestamp,
-            "payload": payload
+                "from": from_user,
+                "chat_id": chat_id,
+                "chat_type": chat_type,
+                "msg_id": msg_id,
+                "timestamp": timestamp,
+                "payload": payload
             }
     })
+    
+    def MSG_NAK(self, connection, chat_id, error_message):
+            connection.sendJson({
+                "message_name": "MSG_NAK",
+                "data": {
+                    "chat_id": chat_id,
+                    "error_message": error_message
+                }
+            })

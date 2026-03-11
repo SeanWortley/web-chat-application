@@ -552,3 +552,12 @@ class Terminal:
 
     def print_current(self):
         print(f"Chatting with {self.current_chat}")
+
+    def process_incorrect_recipient(self):
+        print("\nThis user does not exist! Please exit the chat.\n>>", end="")
+
+    def process_incorrect_group(self):
+        print("\nThis group not exist! Please exit the chat.\n>>", end="")
+
+    def process_not_group_member(self):
+        print("\nYou are not a member of this group! Please exit the chat.\n>>", end="")
