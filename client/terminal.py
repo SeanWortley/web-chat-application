@@ -2,6 +2,8 @@ from threading import Thread, Event
 from hashlib import sha256
 from tokenize import group
 import queue
+import os
+import time
 
 class Terminal:
 
@@ -20,6 +22,8 @@ class Terminal:
         self.logged_in = False
         self.chatting_mode = False
 
+        self.pending_incoming = {}  # for when they don't reply right away the must keep the offer somewhere
+        self.pending_outgoing = {}  # for them to later know the details when the receiver eventually replies
 
         self.unread_messages = {}
         self.current_chat = None # Is either 'from' or 'group_name' depending on chat type
@@ -95,12 +99,15 @@ class Terminal:
                 self.queue_msg(standard_form)
 
     def process_msg(self, message, channel):
-        if channel == self.current_chat:
-            self.print_msg(message)
-        else:
+        if channel != self.current_chat:
             self.queue_msg(message)
             self.notify_msg(message)
-    
+   
+        else:
+            # It's a plain text message
+            self.print_msg(message)
+
+
     def process_unread_in_current_chat(self):
         if self.current_chat not in self.unread_messages:
             return
@@ -182,53 +189,154 @@ class Terminal:
     def start_private_chat(self):
         recipient = input("Who would you like to chat with?\n> ")
         self.current_chat = recipient
-
         self.chatting_mode = True
-        print(f"Entered private chat room with {recipient}\n/exit to leave")
-    
+                
+        self.clear()
+        print(f"========= Entered private chat room with {recipient} =========")
         self.load_private_logs(recipient)
-            
+        print("Commands: /mdt <filepath> - send file")
+        print("          /accept <transfer_id> - accept incoming file")
+        print("          /reject <transfer_id> - reject incoming file")
+        print("          /exit - leave")
         self.process_unread_in_current_chat()
+        
         text = input(">> ")
         while text != "/exit":
-            self.on_user_input({
-                "message_name": "MSG",
-                "data": {
-                    "chat_id": recipient,
-                    "chat_type": "private",
-                    "payload": text
-                }
-            })
+            if text.startswith("/mdt"):
+                parts = text.split(maxsplit=1)
+                if len(parts) == 1:
+                    filepath = input("Enter filepath:\n> ").strip()
+                else:
+                    filepath = parts[1].strip()
+                self.send_media_offer(recipient, filepath, chat_type="private")
+            
+            elif text.startswith("/accept"):
+                parts = text.split()
+                if len(parts) == 2:
+                    transfer_id = parts[1]
+                    self.accept_transfer(transfer_id)
+                else:
+                    print("Usage: /accept <transfer_id>")
+            
+            elif text.startswith("/reject"):
+                parts = text.split()
+                if len(parts) == 2:
+                    transfer_id = parts[1]
+                    self.reject_transfer(transfer_id)
+                else:
+                    print("Usage: /reject <transfer_id>")
+            
+            else:
+                self.on_user_input({
+                    "message_name": "MSG",
+                    "data": {
+                        "chat_id": recipient,
+                        "chat_type": "private",
+                        "payload": text
+                    }
+                })
             text = input(">> ")
+
         self.chatting_mode = False
         self.show_logged_in_menu()
+
+    def accept_transfer(self, transfer_id):
+        if transfer_id not in self.pending_incoming:
+            print(f"No pending offer with ID {transfer_id}")
+            return
         
+        offer = self.pending_incoming[transfer_id]
+        
+        # Send MEDIA_RESPONSE with status ACCEPT
+        self.on_user_input({
+            "message_name": "MEDIA_RESPONSE",
+            "data": {
+                "chat_id": offer['sender'],          # who sent the offer
+                "chat_type": "private",
+                "status": "ACCEPT",
+                "transfer_id": transfer_id,
+                #"receiver_port": self.client.udp_port  # you'll need to get this
+            }
+        })
+        
+        # Remove from pending
+        del self.pending_incoming[transfer_id]
+        print(f" Accepted transfer {transfer_id}")
+
+
+    def reject_transfer(self, transfer_id):
+        if transfer_id not in self.pending_incoming:
+            print(f"No pending offer with ID {transfer_id}")
+            return
+        
+        offer = self.pending_incoming[transfer_id]
+        
+        self.on_user_input({
+            "message_name": "MEDIA_RESPONSE",
+            "data": {
+                "chat_id": offer['sender'],
+                "chat_type": "private",
+                "status": "REJECT",
+                "transfer_id": transfer_id,
+                "receiver_port": None  # not needed
+            }
+        })
+        
+        del self.pending_incoming[transfer_id]
+        print(f" Rejected transfer {transfer_id}") 
 
     def start_group_chat(self):
         group = input("Which chat room would you like to enter?\n> ")
         self.current_chat = group
 
         self.chatting_mode = True
-        print(f"Entered {group} chat room \n/exit to leave")
-
+        self.clear()
+        print(f"Entered {group} chat room")
         self.load_group_logs(group)
-
+        print("Commands: /mdt <filepath> - send file")
+        print("          /accept <transfer_id> - accept incoming file")
+        print("          /reject <transfer_id> - reject incoming file")
+        print("          /exit - leave")
         self.process_unread_in_current_chat()
         text = input(">> ")
         while text != "/exit":
-            self.on_user_input({
-                "message_name": "MSG",
-                "data": {
-                    "chat_id": group,
-                    "chat_type": "group",
-                    "payload": text
-                }
-            })
+            if text.startswith("/mdt"):
+                parts = text.split(maxsplit=1)
+                if len(parts) == 1:
+                    filepath = input("Enter filepath:\n> ").strip()
+                else:
+                    filepath = parts[1].strip()
+                self.send_media_offer(group, filepath, chat_type="group")
+            
+            elif text.startswith("/accept"):
+                parts = text.split()
+                if len(parts) == 2:
+                    transfer_id = parts[1]
+                    self.accept_transfer(transfer_id)
+                else:
+                    print("Usage: /accept <transfer_id>")
+            
+            elif text.startswith("/reject"):
+                parts = text.split()
+                if len(parts) == 2:
+                    transfer_id = parts[1]
+                    self.reject_transfer(transfer_id)
+                else:
+                    print("Usage: /reject <transfer_id>")
+            
+            else:
+                self.on_user_input({
+                    "message_name": "MSG",
+                    "data": {
+                        "chat_id": group,
+                        "chat_type": "group",
+                        "payload": text
+                    }
+                })
             text = input(">> ")
         self.chatting_mode = False
         self.show_logged_in_menu()
-
-            
+    
     def resume(self):
         self.wait_event.set()
     
@@ -237,12 +345,14 @@ class Terminal:
         pass # Implement later
 
     def show_logged_out_menu(self):
+        self.clear()
         print("=== MAIN MENU ===")
         print("/login")
         print("/register")
         print("/help")
 
     def show_logged_in_menu(self):
+        self.clear()
         print("=== CHAT MENU ===")
         print("1. Enter Private Chat")
         print("2. Enter Group Chat")
@@ -335,6 +445,92 @@ class Terminal:
     
         self.send_message(recipient, message)
 
+    def send_media_offer(self, chat_id, filepath, chat_type):
+
+        transfer_id = f"transferID_{int(time.time())}"  # generate unique ID
+        self.pending_outgoing[transfer_id] = {
+            'recipient': chat_id,
+            'filepath': filepath,
+            'filename': os.path.basename(filepath),
+            'filesize': os.path.getsize(filepath),
+            'chat_type': chat_type,
+            'status': 'pending'
+        }
+        self.on_user_input({
+            "message_name": "MEDIA_OFFER",
+            "data": {
+                    "chat_id": chat_id,
+                    "filepath": filepath,
+                    "chat_type": chat_type,
+            }  
+        })
+    
+    def handle_incoming_response(self, message):
+        """
+        Called when a MEDIA_RESPONSE arrives from the server.
+        Handles both private and group transfers by accumulating responses.
+        """
+        data = message.get("data", {})
+        transfer_id = data.get("transfer_id")
+        status = data.get("status")
+        receiver_port = data.get("receiver_port")
+        receiver_ip = data.get("receiver_ip")   # added by server
+        responder = data.get("from")
+
+        if transfer_id not in self.pending_outgoing:
+            print(f" Received response for unknown outgoing transfer {transfer_id}")
+            return
+
+        offer = self.pending_outgoing[transfer_id]
+
+        # Initialize lists if not present (for group transfers)
+        if 'accepted' not in offer:
+            offer['accepted'] = []
+        if 'rejected' not in offer:
+            offer['rejected'] = []
+
+        if status == "ACCEPT":
+            print(f" {responder} accepted the file transfer!")
+            # Store acceptor's connection details for later UDP transfer
+            offer['accepted'].append({
+                'user': responder,
+                'ip': receiver_ip,
+                'port': receiver_port
+            })
+            # For private transfers, you could immediately start UDP here
+            # if len(offer['accepted']) == 1 and offer['chat_type'] == 'private':
+            #     self.initiate_udp_to(offer['accepted'][0])
+        elif status == "REJECT":
+            print(f"{responder} rejected the file transfer")
+            offer['rejected'].append(responder)
+        else:
+            print(f"Unknown response status: {status}")
+
+
+    def handle_incoming_offer(self, message):
+        data = message.get("data", {})
+        transfer_id = data.get("transfer_id")
+        if not transfer_id:
+            return
+        
+        # Store the offer
+        self.pending_incoming[transfer_id] = {
+            'sender': data.get('from'),
+            'filename': data.get('filename'),
+            'filesize': data.get('filesize'),
+            'chat_type': data.get('chat_type'),
+            'chat_id': data.get('chat_id')  # could be sender or group
+        }
+        
+        # Display the offer
+        print(f"\n {data.get('from')} wants to send you {data.get('filename')} ({data.get('filesize')} bytes)")
+        print(f"   Transfer ID: {transfer_id}")
+        print("   Type: /accept <transfer_id> or /reject <transfer_id>")
+        
+        # If in chat mode, show prompt
+        if self.chatting_mode:
+            print(">> ", end="", flush=True)
+
     def send_message(self, recipient, message):
         print(f"send_message called, logged_in={self.logged_in}")
         if not self.logged_in:
@@ -351,6 +547,8 @@ class Terminal:
         })
         print(f"Message sent to {recipient}")
         
+    def clear(self):
+        os.system('cls' if os.name == 'nt' else 'clear')
 
     def print_current(self):
         print(f"Chatting with {self.current_chat}")

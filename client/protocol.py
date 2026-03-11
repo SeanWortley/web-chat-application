@@ -2,6 +2,8 @@ from hashlib import sha256
 import time
 from tokenize import group
 import uuid
+import json
+from pathlib import Path
 
 class Protocol:
     def __init__(self, client):
@@ -17,11 +19,13 @@ class Protocol:
             "LOGOUT_ACK": self.handle_LOGOUT_ACK,
             "MSG": self.handle_MSG,  
             "MSG_DELIVERED": self.handle_MSG_DELIVERED,
-            "UNSENT_MESSAGES": self.handle_UNSENT_MESSAGES
+            "UNSENT_MESSAGES": self.handle_UNSENT_MESSAGES,
+            "MEDIA_OFFER": self.handle_incoming_media_offer,
+            "MEDIA_RESPONSE": self.handle_incoming_media_response
         }
 
     def handleIncoming(self, connection, serverMessage):
-        #print(f"handleIncoming: {serverMessage}")
+
         messageName = serverMessage["message_name"]
         handler = self.handlers.get(messageName)
         if handler:
@@ -184,6 +188,53 @@ class Protocol:
         connection.sendJson(outgoing)
 
         
+    def media_offer(self, connection, chat_id, filepath, chat_type, sender_port):
+
+        # Validate path
+        file_path = Path(filepath)
+        if not file_path.exists():
+            print("Checking:", file_path.resolve())
+            print(f"File not found: {filepath}")
+            return
+    
+        filename = file_path.name
+        filesize = file_path.stat().st_size
+        transfer_id = f"transferID_{int(time.time())}"
+
+        connection.sendJson({
+            "message_name": "MEDIA_OFFER",
+            "data": {
+                "from": self.client.loggedInAs,
+                "chat_id": chat_id,
+                "chat_type": chat_type,
+                "transfer_id": transfer_id,
+                "filename": filename,
+                "filesize": filesize,
+                "sender_port": sender_port
+
+            } 
+        })
+
+
+    def handle_incoming_media_offer(self, connection, message):
+        self.client.interface.handle_incoming_offer(message)
+    
+    def media_response(self, connection, chat_id, chat_type, status, transfer_id, receiver_port):
+        connection.sendJson({
+        "message_name": "MEDIA_RESPONSE",
+        "data": {
+            "from": self.client.loggedInAs,
+            "chat_id": chat_id,
+            "chat_type": chat_type,
+            "status": status,
+            "transfer_id": transfer_id,
+            "receiver_port": receiver_port
+        }
+    })
+    
+    def handle_incoming_media_response(self, connection, message):
+        self.client.interface.handle_incoming_response(message)
+    
     def handle_MSG(self, connection, message):
         #print("Ekse, you have a new message coming through")
         data = message.get("data", {})
@@ -203,7 +254,7 @@ class Protocol:
         else:
             print("Unknown chat type:", chat_type)
             return
-
+            
         self.client.interface.process_msg(message, channel)
 
         """
@@ -229,4 +280,3 @@ class Protocol:
         msg_id = data.get("message_id")
         recipients = data.get("recipients", [])
         self.client.interface.display(f"✓ Message delivered to: {', '.join(recipients)}")
-    
