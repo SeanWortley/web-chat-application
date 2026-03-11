@@ -553,6 +553,9 @@ class Terminal:
     def print_current(self):
         print(f"Chatting with {self.current_chat}")
 
+    def process_self_message(self):
+        print("\nYou can't message yourself! Please exit the chat.\n>>", end="")
+
     def process_incorrect_recipient(self):
         print("\nThis user does not exist! Please exit the chat.\n>>", end="")
 

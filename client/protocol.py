@@ -315,6 +315,9 @@ class Protocol:
 
 
         match error_message:
+            case "You can't send a message to yourself":
+                self.client.interface.process_self_message()
+                self.client.database.delete_private_chat_logs(chat_id)
             case "Recipient doesn't exist":
                 self.client.interface.process_incorrect_recipient()
                 self.client.database.delete_private_chat_logs(chat_id)
