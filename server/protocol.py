@@ -319,6 +319,7 @@ class Protocol:
             self.handle_text_message(message_name, context)
 
     def handle_media_message(self, message_name, ctx):
+        """"""
 
         target_conn = ctx["target_conn"]
 
@@ -354,7 +355,7 @@ class Protocol:
                 with self.lock:
                     offer = self.pending_offers.get(transfer_id)
                     if offer:
-                        responder = ctx["from_user"]
+                        responder = ctx["from_user"]    #The responder is the user who just sent this response (the receiver)
                         if responder not in offer['responders']:
                             offer['responders'].add(responder)
                             # Forward response to the original sender
