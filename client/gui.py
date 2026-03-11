@@ -436,6 +436,21 @@ class GUI:
     def show_logged_out_menu(self):
         self.root.after(0, self.show_login_screen)
 
+    def process_self_message(self):
+        """Called when a user messages themself."""
+        # Find and close any chat window for the invalid recipient
+        if self.current_chat and self.current_chat in self.chat_windows:
+            chat_id = self.current_chat
+            window = self.chat_windows[chat_id]
+            del self.chat_windows[chat_id]
+            self.current_chat = None
+            self.root.after(0, lambda: [
+                messagebox.showerror("Error", "You can not message yourself!"),
+                window.destroy()
+            ])
+        else:
+            self.root.after(0, lambda: messagebox.showerror("Error", "This user does not exist!"))
+
     def process_incorrect_recipient(self):
         """Called when a private message recipient doesn't exist."""
         # Find and close any chat window for the invalid recipient
