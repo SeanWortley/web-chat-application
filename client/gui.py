@@ -56,7 +56,7 @@ class GUI:
     
     def _display_text(self, text):
         """Display text in the main window"""
-        if hasattr(self, 'output_area'):
+        if hasattr(self, 'output_area') and self.output_area.winfo_exists():
             self.output_area.insert(tk.END, text + "\n")
             self.output_area.see(tk.END)
     
@@ -262,13 +262,14 @@ class GUI:
         chat_display = scrolledtext.ScrolledText(window, width=60, height=20, state='normal')
         chat_display.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
         
-        # This us where any unread messages for this chat will be displayed.
+        """        # This us where any unread messages for this chat will be displayed.
         if chat_id in self.unread_messages:
             for msg in self.unread_messages[chat_id]:
                 from_user = msg.get("from")
                 payload = msg.get("payload")
                 chat_display.insert(tk.END, f"{from_user}: {payload}\n")
             del self.unread_messages[chat_id]
+        """
         
         # Input area where the user can type their message and send it to either the private chat recipient or the group chat. 
         input_frame = tk.Frame(window)

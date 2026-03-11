@@ -245,7 +245,7 @@ class Protocol:
 
             # Text message fields
             "msg_id": data.get("msg_id", "unknown"),
-            "timestamp": data.get("timestamp", "unknown"),
+            "timestamp": time.time(),
             "payload": data.get("payload", ""),
 
             # Media message fields

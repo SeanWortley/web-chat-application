@@ -271,6 +271,32 @@ class Protocol:
     
     def handle_UNSENT_MESSAGES(self, connection, message):
         groups = message["data"]["groups"]
+        
+        for chat_id, messages in groups.items():
+            for msg in messages:
+                if msg["chat_type"] == "private":
+                    self.client.database.store_private_message({
+                        "data": {
+                            "from": msg["sender"],
+                            "chat_id": chat_id,
+                            "chat_type": "private",
+                            "msg_id": msg["msg_id"],
+                            "payload": msg["content"],
+                            "timestamp": msg["timestamp"]
+                        }
+                    })
+                elif msg["chat_type"] == "group":
+                    self.client.database.store_group_message({
+                        "data": {
+                            "from": msg["sender"],
+                            "chat_id": chat_id,
+                            "chat_type": "group",
+                            "msg_id": msg["msg_id"],
+                            "payload": msg["content"],
+                            "timestamp": msg["timestamp"]
+                        }
+                    })
+        
         self.client.interface.process_unsent_batch(groups)
 
 
