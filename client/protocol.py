@@ -21,7 +21,8 @@ class Protocol:
             "MSG_DELIVERED": self.handle_MSG_DELIVERED,
             "UNSENT_MESSAGES": self.handle_UNSENT_MESSAGES,
             "MEDIA_OFFER": self.handle_incoming_media_offer,
-            "MEDIA_RESPONSE": self.handle_incoming_media_response
+            "MEDIA_RESPONSE": self.handle_incoming_media_response,
+            "MSG_NAK": self.handle_MSG_NAK
         }
 
     def handleIncoming(self, connection, serverMessage):
@@ -306,3 +307,20 @@ class Protocol:
         msg_id = data.get("message_id")
         recipients = data.get("recipients", [])
         self.client.interface.display(f"✓ Message delivered to: {', '.join(recipients)}")
+
+    def handle_MSG_NAK(self, connection, message):
+        data = message.get("data")
+        chat_id = data.get("chat_id")
+        error_message = data.get("error_message")
+
+
+        match error_message:
+            case "Recipient doesn't exist":
+                self.client.interface.process_incorrect_recipient()
+                self.client.database.delete_private_chat_logs(chat_id)
+            case "Group doesn't exist":
+                self.client.interface.process_incorrect_group()
+                self.client.database.delete_group_chat_logs(chat_id)
+            case "You're not in this group":
+                self.client.interface.process_not_group_member()
+                self.client.database.delete_group_chat_logs(chat_id)
