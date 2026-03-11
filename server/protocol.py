@@ -262,6 +262,8 @@ class Protocol:
         # Handle private messages
         if context["chat_type"] == "private":
             recipient = context["chat_id"]
+            if recipient == context.get("from_user"):
+                self.MSG_NAK(connection, context["chat_id"], "You can't send a message to yourself")
             if not self.server.database.get_user(context["chat_id"]):
                 self.MSG_NAK(connection, context.get("chat_id"), "Recipient doesn't exist")
                 return
