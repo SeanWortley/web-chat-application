@@ -191,7 +191,7 @@ class Protocol:
         chat_id = data.get("chat_id")
         chat_type = data.get("chat_type")
 
-        if from_user == self.client.username:
+        if from_user == self.client.loggedInAs:
             return
 
         if chat_type == "private":
