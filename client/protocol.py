@@ -204,7 +204,7 @@ class Protocol:
         connection.sendJson({
             "message_name": "MEDIA_OFFER",
             "data": {
-                "from": self.client.username,
+                "from": self.client.loggedInAs,
                 "chat_id": chat_id,
                 "chat_type": chat_type,
                 "transfer_id": transfer_id,
@@ -223,7 +223,7 @@ class Protocol:
         connection.sendJson({
         "message_name": "MEDIA_RESPONSE",
         "data": {
-            "from": self.client.username,
+            "from": self.client.loggedInAs,
             "chat_id": chat_id,
             "chat_type": chat_type,
             "status": status,
