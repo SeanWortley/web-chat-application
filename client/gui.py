@@ -493,3 +493,9 @@ class GUI:
             ])
         else:
             self.root.after(0, lambda: messagebox.showerror("Error", "You are not a member of this group!"))
+    
+    def process_shutdown(self):
+        self.root.after(0, lambda: [
+            messagebox.showinfo("Server", "Server has shut down."),
+            self.root.destroy()
+        ])
