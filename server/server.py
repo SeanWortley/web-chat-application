@@ -4,6 +4,8 @@ from connection import Connection
 from protocol import Protocol
 from database import Database
 import argparse
+import threading
+import sys
 
 
 
@@ -16,16 +18,24 @@ class Server:
         self.protocol = Protocol(self)
         self.database = Database()
         self.socket.listen()
+        self.socket.settimeout(1.0)
         #self.groups = {}  # stores groups: {group_name: [username1, username2]}
         self.connections = []  # track all active connections
         self.active_users = []
+        self.running = True
 
     def listen(self):
-        while True:
-            clientSocket, address = self.socket.accept()
-            connection = Connection(clientSocket, self)
-            self.connections.append(connection)  # track active connection
-            connection.start()
+        while self.running:
+            try:
+                clientSocket, address = self.socket.accept()
+                clientSocket.settimeout(None)  
+                connection = Connection(clientSocket, self)
+                self.connections.append(connection)
+                connection.start()
+            except (timeout, TimeoutError):
+                continue
+            except OSError:
+                break
 
     def get_connection_by_username(self, username):
         for conn in self.connections:
@@ -44,7 +54,27 @@ class Server:
     def log_outgoing(self, message):
         if self.verbose:
             print(f"OUTGOING: {message}")
+    
+    def quit(self):
+        print("Shutting down")
+        self.runnin = False
+        for connection in self.connections[:]:
+            try:
+                self.protocol.SHUTDOWN(connection)
+            except Exception:
+                pass
+            connection.close()
+        self.socket.close()
 
+    def listen_for_quit(self):
+        while self.running:
+            try:
+                text = input()
+                if text == "/quit":
+                    self.quit()
+                    break
+            except EOFError:
+                break
 
 def main():
     # Parse in arguements
@@ -56,7 +86,12 @@ def main():
     print(args.host, args.port, args.verbose)
 
     server = Server(args.host, args.port, args.verbose)
+    
+    quitting_thread = threading.Thread(target=server.listen_for_quit, daemon=True)
+    quitting_thread.start()
+
     server.listen()
+    sys.exit(0)
 
 
 if __name__ == "__main__":

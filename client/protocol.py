@@ -22,7 +22,8 @@ class Protocol:
             "UNSENT_MESSAGES": self.handle_UNSENT_MESSAGES,
             "MEDIA_OFFER": self.handle_incoming_media_offer,
             "MEDIA_RESPONSE": self.handle_incoming_media_response,
-            "MSG_NAK": self.handle_MSG_NAK
+            "MSG_NAK": self.handle_MSG_NAK,
+            "SHUTDOWN": self.handle_SHUTDOWN,
         }
 
     def handleIncoming(self, connection, serverMessage):
@@ -327,3 +328,8 @@ class Protocol:
             case "You're not in this group":
                 self.client.interface.process_not_group_member()
                 self.client.database.delete_group_chat_logs(chat_id)
+    
+    def handle_SHUTDOWN(self, connection, message):
+        self.client.command_queue.put({
+            "message_name": "shutdown"
+        })

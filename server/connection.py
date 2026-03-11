@@ -54,7 +54,8 @@ class Connection:
         except Exception as e:
             print(f"Connection error: {e}")
         finally:
-            self.server.active_users.remove(self.loggedInAs)
+            if self.loggedInAs in self.server.active_users:
+                self.server.active_users.remove(self.loggedInAs)
             self.close()
 
     def sendJson(self, outgoing, payload=None):
