@@ -451,7 +451,7 @@ class Terminal:
         responder = data.get("from")
 
         if transfer_id not in self.pending_outgoing:
-            print(f"⚠️ Received response for unknown outgoing transfer {transfer_id}")
+            print(f" Received response for unknown outgoing transfer {transfer_id}")
             return
 
         offer = self.pending_outgoing[transfer_id]
@@ -463,7 +463,7 @@ class Terminal:
             offer['rejected'] = []
 
         if status == "ACCEPT":
-            print(f"✅ {responder} accepted the file transfer!")
+            print(f" {responder} accepted the file transfer!")
             # Store acceptor's connection details for later UDP transfer
             offer['accepted'].append({
                 'user': responder,
@@ -474,10 +474,10 @@ class Terminal:
             # if len(offer['accepted']) == 1 and offer['chat_type'] == 'private':
             #     self.initiate_udp_to(offer['accepted'][0])
         elif status == "REJECT":
-            print(f"❌ {responder} rejected the file transfer")
+            print(f"{responder} rejected the file transfer")
             offer['rejected'].append(responder)
         else:
-            print(f"⚠️ Unknown response status: {status}")
+            print(f"Unknown response status: {status}")
 
 
     def handle_incoming_offer(self, message):
