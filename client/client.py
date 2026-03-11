@@ -14,11 +14,13 @@ class Client:
         self.authenticated = False
 
         self.udp = UDPHandler(self.socket, self)
-        self.udp.handler = None     # Will be created when needed
+        self.udp.handler = None
+        self.udp_port = 99999   # placeholder
 
         self.interface = interface
+        self.interface.client = self          # <-- ADD THIS LINE
         self.interface.on_user_input = self.handle_user_input
-        self.interface.start()
+        self.interface.start()                 # Now the thread has the reference
 
         self.protocol = Protocol(self)
         self.connection = Connection(self.socket, self)
@@ -72,16 +74,17 @@ class Client:
                             input["data"]["sender_port"])
                 
             case "MEDIA_RESPONSE":
-                handler = self.get_udp_handler() 
-                port = handler.get_port() if handler else None
+                #handler = self.get_udp_handler() 
+                #port = handler.get_port() if handler else None
 
                 input["data"]["from"] = self.username
-                input["data"]["receiver_port"] = port
+                input["data"]["receiver_port"] = 99999
                 self.protocol.media_response(self.connection,
                             input["data"]["chat_id"],
                             input["data"]["chat_type"],
                             input["data"]["status"],
-                            input["data"]["transfer"],)
+                            input["data"]["transfer_id"],
+                            input["data"]["receiver_port"])
             case "MSG":  
                 input["data"]["from"] = self.username
                 input["data"]["msg_id"] = f"msg_{int(time.time())}"
