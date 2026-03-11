@@ -501,6 +501,8 @@ class Protocol:
         return None
 
     def forward_MEDIA_OFFER(self, recipient_conn, from_user, chat_id, chat_type, transfer_id, filename, filesize, sender_port):
+            media_offer_sender_conn = self.get_user_connection(from_user)
+            md_offer_sender_ip = media_offer_sender_conn.socket.getpeername()[0]
             recipient_conn.sendJson({
                 "message_name": "MEDIA_OFFER",
                 "data": {
@@ -510,12 +512,14 @@ class Protocol:
                 "transfer_id": transfer_id,
                 "filename": filename,
                 "filesize": filesize,
-                "sender_port": sender_port
+                "sender_port": sender_port,
+                "sender_ip": md_offer_sender_ip
                 }
             })
 
     def forward_MEDIA_RESPONSE(self, recipient_conn, to_user, from_user, status, transfer_id, receiver_port):
-        receiver_ip = receiver_ip = recipient_conn.socket.getpeername()[0]
+        media_response_sender_conn = self.get_user_connection(from_user)
+        md_response_sender_ip = media_response_sender_conn.socket.getpeername()[0]
         recipient_conn.sendJson({
             "message_name": "MEDIA_RESPONSE",
             "data": {
@@ -524,7 +528,7 @@ class Protocol:
                 "status": status,
                 "transfer_id": transfer_id,
                 "receiver_port": receiver_port,
-                "receiver_ip": receiver_ip
+                "receiver_ip": md_response_sender_ip
             }
         })
         
