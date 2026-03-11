@@ -128,14 +128,14 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", type=str, default="127.0.0.1")
     parser.add_argument("--port", type=int, default=12000)    
-    parser.add_argument("--gui", action="store_true", default=False)
+    parser.add_argument("--terminal", action="store_true", default=False)
     args = parser.parse_args()
     print(args)
 
-    if args.gui:
-        interface = GUI()
-    else:
+    if args.terminal:
         interface = Terminal()
+    else:
+        interface = GUI()
     client = Client(args.host, args.port, interface)
     # Start client in background thread
     client.start()
