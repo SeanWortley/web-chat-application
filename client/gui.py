@@ -5,6 +5,7 @@ import tkinter as tk
 from tkinter import scrolledtext, simpledialog, messagebox
 from hashlib import sha256
 import queue
+import database
 
 class GUI:
     def __init__(self):
@@ -15,7 +16,7 @@ class GUI:
         self.on_user_input = None
         self.running = True
         self.logged_in = False
-        self.username = None
+        self.loggedInAs = None
         self.current_chat = None
         self.chatting_mode = False
         
@@ -95,7 +96,7 @@ class GUI:
         menu_frame = tk.Frame(self.root, padx=20, pady=20)
         menu_frame.pack(side=tk.LEFT, fill=tk.Y)
         
-        tk.Label(menu_frame, text=f"Logged in as: {self.username}", font=("Arial", 10)).pack(pady=5)
+        tk.Label(menu_frame, text=f"Logged in as: {self.loggedInAs}", font=("Arial", 10)).pack(pady=5)
         tk.Label(menu_frame, text="MAIN MENU", font=("Arial", 14, "bold")).pack(pady=10)
         
         buttons = [
@@ -124,7 +125,7 @@ class GUI:
             return
         
         hashed = sha256(password.encode()).hexdigest()
-        self.username = username
+        self.loggedInAs = username
         
         # Use after() to ensure we're in the main thread
         if self.on_user_input:
@@ -151,7 +152,7 @@ class GUI:
             return
         
         hashed = sha256(password.encode()).hexdigest()
-        self.username = username
+        self.loggedInAs = username
         
         if self.on_user_input:
             self.root.after(100, lambda: self._send_register(username, hashed))
@@ -176,6 +177,14 @@ class GUI:
         # Sets the current chat to the recipient's username and will open a new chat window for this private conversation. This is where sender types and receives messages from this specific user.
         self.current_chat = recipient
         self.open_chat_window(recipient, "private")
+        self.load_private_logs(recipient)
+
+    def load_private_logs(self, chat_id):
+        logs = self.database.get_private_chat_history(chat_id)
+        for message in logs:
+            from_user = message.get("from_user")
+            msg_text = message.get("msg_text")
+            sender = "You: " if (from_user == self.loggedInAs) else f"{from_user}: "
     
     def start_group_chat(self):
         # Similar to the start_private_chat method, this will be called when the user clicks the "Group Chat" button. It will prompt the user to enter the name of the group they want to chat in and then open a new chat window for that group conversation.
