@@ -5,6 +5,7 @@ import tkinter as tk
 from tkinter import scrolledtext, simpledialog, messagebox
 from hashlib import sha256
 import queue
+import database
 
 class GUI:
     def __init__(self):
@@ -15,7 +16,7 @@ class GUI:
         self.on_user_input = None
         self.running = True
         self.logged_in = False
-        self.username = None
+        self.loggedInAs = None
         self.current_chat = None
         self.chatting_mode = False
         
@@ -55,7 +56,7 @@ class GUI:
     
     def _display_text(self, text):
         """Display text in the main window"""
-        if hasattr(self, 'output_area'):
+        if hasattr(self, 'output_area') and self.output_area.winfo_exists():
             self.output_area.insert(tk.END, text + "\n")
             self.output_area.see(tk.END)
     
@@ -95,7 +96,7 @@ class GUI:
         menu_frame = tk.Frame(self.root, padx=20, pady=20)
         menu_frame.pack(side=tk.LEFT, fill=tk.Y)
         
-        tk.Label(menu_frame, text=f"Logged in as: {self.username}", font=("Arial", 10)).pack(pady=5)
+        tk.Label(menu_frame, text=f"Logged in as: {self.loggedInAs}", font=("Arial", 10)).pack(pady=5)
         tk.Label(menu_frame, text="MAIN MENU", font=("Arial", 14, "bold")).pack(pady=10)
         
         buttons = [
@@ -124,7 +125,7 @@ class GUI:
             return
         
         hashed = sha256(password.encode()).hexdigest()
-        self.username = username
+        self.loggedInAs = username
         
         # Use after() to ensure we're in the main thread
         if self.on_user_input:
@@ -151,7 +152,7 @@ class GUI:
             return
         
         hashed = sha256(password.encode()).hexdigest()
-        self.username = username
+        self.loggedInAs = username
         
         if self.on_user_input:
             self.root.after(100, lambda: self._send_register(username, hashed))
@@ -176,6 +177,60 @@ class GUI:
         # Sets the current chat to the recipient's username and will open a new chat window for this private conversation. This is where sender types and receives messages from this specific user.
         self.current_chat = recipient
         self.open_chat_window(recipient, "private")
+        self.load_private_logs(recipient)
+
+    def load_private_logs(self, chat_id):
+        print(f"load_private_logs: chat_id={chat_id}")
+        if not hasattr(self, 'database') or not self.database:
+            print("No database")
+            return
+        logs = self.database.get_private_chat_history(chat_id)
+        #print(f"logs: {logs}")
+        if not logs:
+            return
+        
+        window = self.chat_windows.get(chat_id)
+        for child in window.winfo_children():
+            print(f"child: {type(child)}, {child}")
+        if not window:
+            return
+
+        for message in logs:
+            from_user = message.get("from_user")
+            msg_text = message.get("msg_text")
+            sender = "You" if from_user == self.loggedInAs else from_user
+
+            for child in window.winfo_children():
+                for grandchild in child.winfo_children():
+                    if isinstance(grandchild, scrolledtext.ScrolledText):
+                        grandchild.insert(tk.END, f"{sender}: {msg_text}\n")
+                        grandchild.see(tk.END)
+                        break
+
+    def load_group_logs(self, group_id):
+        print(f"load_group_logs: group_id={group_id}")
+        if not hasattr(self, 'database') or not self.database:
+            print("No database")
+            return
+        logs = self.database.get_group_chat_history(group_id)
+        if not logs:
+            return
+        
+        window = self.chat_windows.get(group_id)
+        if not window:
+            return
+
+        for message in logs:
+            from_user = message.get("from_user")
+            msg_text = message.get("msg_text")
+            sender = "You" if from_user == self.loggedInAs else from_user
+
+            for child in window.winfo_children():
+                for grandchild in child.winfo_children():
+                    if isinstance(grandchild, scrolledtext.ScrolledText):
+                        grandchild.insert(tk.END, f"{sender}: {msg_text}\n")
+                        grandchild.see(tk.END)
+                        break
     
     def start_group_chat(self):
         # Similar to the start_private_chat method, this will be called when the user clicks the "Group Chat" button. It will prompt the user to enter the name of the group they want to chat in and then open a new chat window for that group conversation.
@@ -186,6 +241,7 @@ class GUI:
         # Sets the current chat to the group name and will open a new chat window for this group conversation. 
         self.current_chat = group
         self.open_chat_window(group, "group")
+        self.load_group_logs(group)
     
     def open_chat_window(self, chat_id, chat_type):
         # Opens a new chat window for either a private or group chat. It takes the chat_id (username = private chats and the group name = group chats).
@@ -206,13 +262,14 @@ class GUI:
         chat_display = scrolledtext.ScrolledText(window, width=60, height=20, state='normal')
         chat_display.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
         
-        # This us where any unread messages for this chat will be displayed.
+        """        # This us where any unread messages for this chat will be displayed.
         if chat_id in self.unread_messages:
             for msg in self.unread_messages[chat_id]:
                 from_user = msg.get("from")
                 payload = msg.get("payload")
                 chat_display.insert(tk.END, f"{from_user}: {payload}\n")
             del self.unread_messages[chat_id]
+        """
         
         # Input area where the user can type their message and send it to either the private chat recipient or the group chat. 
         input_frame = tk.Frame(window)
