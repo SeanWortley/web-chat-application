@@ -110,27 +110,27 @@ class Client:
                 #handler = self.get_udp_handler() 
                 #port = handler.get_port() if handler else None
 
-                input["data"]["from"] = self.username
-                input["data"]["transfer_id"] = f"transferID_{int(time.time())}"
-                input["data"]["sender_port"] = 88888
+                input_data["data"]["from"] = self.loggedInAs
+                input_data["data"]["transfer_id"] = f"transferID_{int(time.time())}"
+                input_data["data"]["sender_port"] = 88888
                 self.protocol.media_offer(self.connection,
-                            input["data"]["chat_id"],
-                            input["data"]["filepath"],
-                            input["data"]["chat_type"],
-                            input["data"]["sender_port"])
+                            input_data["data"]["chat_id"],
+                            input_data["data"]["filepath"],
+                            input_data["data"]["chat_type"],
+                            input_data["data"]["sender_port"])
                 
             case "MEDIA_RESPONSE":
                 #handler = self.get_udp_handler() 
                 #port = handler.get_port() if handler else None
 
-                input["data"]["from"] = self.username
-                input["data"]["receiver_port"] = 99999
+                input_data["data"]["from"] = self.loggedInAs
+                input_data["data"]["receiver_port"] = 99999
                 self.protocol.media_response(self.connection,
-                            input["data"]["chat_id"],
-                            input["data"]["chat_type"],
-                            input["data"]["status"],
-                            input["data"]["transfer_id"],
-                            input["data"]["receiver_port"])
+                            input_data["data"]["chat_id"],
+                            input_data["data"]["chat_type"],
+                            input_data["data"]["status"],
+                            input_data["data"]["transfer_id"],
+                            input_data["data"]["receiver_port"])
             case "close_connection":
                 self.connection.close()
             case "quit_program":
