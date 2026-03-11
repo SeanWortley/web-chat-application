@@ -17,7 +17,8 @@ class Protocol:
             "JOIN_GROUP": self.handle_JOIN_GROUP,
             "GROUP_LIST": self.handle_GROUP_LIST,
             "REQUEST_UNSENT_MESSAGES": self.handle_REQUEST_UNSENT_MESSAGES,
-            "MEDIA_OFFER": self.handle_MSG
+            "MEDIA_OFFER": self.handle_MSG,
+            "MEDIA_RESPONSE": self.handle_MSG
         }
     
     def handleIncoming(self, connection, clientMessage):
@@ -251,7 +252,9 @@ class Protocol:
             "transfer_id": data.get("transfer_id"),
             "filename": data.get("filename"),
             "filesize": data.get("filesize"),
-            "sender_port": data.get("sender_port")
+            "sender_port": data.get("sender_port"),
+            "status": data.get("status"),           
+            "receiver_port": data.get("receiver_port") 
         }
 
         # Handle private messages
@@ -322,23 +325,43 @@ class Protocol:
                 sender_port=ctx["sender_port"],
                 recipient=ctx["chat_id"])
         
-        if target_conn:
+            if target_conn:
 
-            print(f"handle_MSG: from={ctx['from_user']}, chat_id={ctx['chat_id']}, chat_type={ctx['chat_type']}, target_conn={target_conn}")
+                print(f"handle_MSG: from={ctx['from_user']}, chat_id={ctx['chat_id']}, chat_type={ctx['chat_type']}, target_conn={target_conn}")
 
-            self.forward_MEDIA_OFFER(
-                target_conn,
-                ctx["from_user"],
-                ctx["chat_id"],
-                ctx["chat_type"],
-                ctx["transfer_id"],
-                ctx["filename"],
-                ctx["filesize"],
-                ctx["sender_port"]
-            )
-            print("Succesfullt sent to receiver")
-        elif target_conn and message_name == "MEDIA_RESPONSE":
-            pass
+                self.forward_MEDIA_OFFER(
+                    target_conn,
+                    ctx["from_user"],
+                    ctx["chat_id"],
+                    ctx["chat_type"],
+                    ctx["transfer_id"],
+                    ctx["filename"],
+                    ctx["filesize"],
+                    ctx["sender_port"]
+                )
+            else:
+                # store on pending offers
+                print("Have to store offline offer when the receiver is oflline for later delivery")
+                pass
+
+        elif message_name == "MEDIA_RESPONSE":
+        # get original offer
+            original = self.get_and_remove(ctx.get("transfer_id"))
+            if original:
+                sender_conn = self.get_user_connection(original['sender'])
+                if sender_conn:
+                    self.forward_MEDIA_RESPONSE(
+                        sender_conn,
+                        original['sender'],
+                        ctx["from_user"],  # responder
+                        ctx["status"],
+                        ctx["transfer_id"],
+                        ctx.get("receiver_port")
+                    )
+                else:
+                    # Sender is offline store response
+                    print("Have to store response sender is offline")
+                    pass
 
     def add_offer(self, transfer_id, sender, sender_port, recipient):
             """Store an offer"""
@@ -492,7 +515,21 @@ class Protocol:
                 "sender_port": sender_port
                 }
             })
-    
+
+    def forward_MEDIA_RESPONSE(self, recipient_conn, to_user, from_user, status, transfer_id, receiver_port):
+        receiver_ip = receiver_ip = recipient_conn.socket.getpeername()[0]
+        recipient_conn.sendJson({
+            "message_name": "MEDIA_RESPONSE",
+            "data": {
+                "from": from_user,
+                "to": to_user,  
+                "status": status,
+                "transfer_id": transfer_id,
+                "receiver_port": receiver_port,
+                "receiver_ip": receiver_ip
+            }
+        })
+        
     def forward_message(self, recipient_conn, from_user, chat_id, chat_type, msg_id, timestamp, payload):
             #forarding of the message to correct recepient
             recipient_conn.sendJson({

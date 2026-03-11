@@ -20,11 +20,12 @@ class Protocol:
             "MSG": self.handle_MSG,  
             "MSG_DELIVERED": self.handle_MSG_DELIVERED,
             "UNSENT_MESSAGES": self.handle_UNSENT_MESSAGES,
-            "MEDIA_OFFER": self.handle_incoming_media_offer
+            "MEDIA_OFFER": self.handle_incoming_media_offer,
+            "MEDIA_RESPONSE": self.handle_incoming_media_response
         }
 
     def handleIncoming(self, connection, serverMessage):
-        #print(f"handleIncoming: {serverMessage}")
+
         messageName = serverMessage["message_name"]
         handler = self.handlers.get(messageName)
         if handler:
@@ -216,29 +217,23 @@ class Protocol:
 
 
     def handle_incoming_media_offer(self, connection, message):
-        self.client.interface.display("Your offer arrived")
-        self.client.interface.send_media_response(connection, message)
+        self.client.interface.handle_incoming_offer(message)
     
     def media_response(self, connection, chat_id, chat_type, status, transfer_id, receiver_port):
         connection.sendJson({
-            "message_name": "MEDIA_RESPONSE",
-            "data": {
-                "from": self.client.username,
-                "chat_id": chat_id,
-                "chat_type": chat_type,
-                "status": status,
-                "transfer_id": transfer_id,
-                "receiver_port": receiver_port
-
-            } 
-        })
+        "message_name": "MEDIA_RESPONSE",
+        "data": {
+            "from": self.client.username,
+            "chat_id": chat_id,
+            "chat_type": chat_type,
+            "status": status,
+            "transfer_id": transfer_id,
+            "receiver_port": receiver_port
+        }
+    })
     
     def handle_incoming_media_response(self, connection, message):
-        data = message.get("data", {})
-        if(data.get("status").lower() == "accepted"):
-            print("Your offer was accepted, media sent :) ")
-        else:
-            print("Your offer was rejected, media not sent :( ")
+        self.client.interface.handle_incoming_response(message)
     
     def handle_MSG(self, connection, message):
         #print("Ekse, you have a new message coming through")

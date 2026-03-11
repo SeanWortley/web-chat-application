@@ -30,6 +30,10 @@ class Client:
         self.socket = None
         self.connection = None
         self.protocol = None
+
+        self.udp = UDPHandler(self.socket, self)
+        self.udp.handler = None
+        self.udp_port = 99999 
         
     def start(self):
         """Start the client connection in a background thread"""
@@ -118,16 +122,17 @@ class Client:
                             input["data"]["sender_port"])
                 
             case "MEDIA_RESPONSE":
-                handler = self.get_udp_handler() 
-                port = handler.get_port() if handler else None
+                #handler = self.get_udp_handler() 
+                #port = handler.get_port() if handler else None
 
                 input["data"]["from"] = self.username
-                input["data"]["receiver_port"] = port
+                input["data"]["receiver_port"] = 99999
                 self.protocol.media_response(self.connection,
                             input["data"]["chat_id"],
                             input["data"]["chat_type"],
                             input["data"]["status"],
-                            input["data"]["transfer"],)
+                            input["data"]["transfer_id"],
+                            input["data"]["receiver_port"])
             case "close_connection":
                 self.connection.close()
             case "quit_program":
