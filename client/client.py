@@ -31,8 +31,6 @@ class Client:
         self.connection = None
         self.protocol = None
 
-        self.udp = UDPHandler(self.socket, self)
-        self.udp.handler = None
         self.udp_port = 99999 
         
     def start(self):
