@@ -255,7 +255,7 @@ class Terminal:
                 "chat_type": "private",
                 "status": "ACCEPT",
                 "transfer_id": transfer_id,
-                #"receiver_port": self.client.udp_port  # you'll need to get this
+                #"receiver_port": self.client.udp_port  
             }
         })
         
@@ -277,8 +277,7 @@ class Terminal:
                 "chat_id": offer['sender'],
                 "chat_type": "private",
                 "status": "REJECT",
-                "transfer_id": transfer_id,
-                "receiver_port": None  # not needed
+                "transfer_id": transfer_id
             }
         })
         
@@ -477,6 +476,7 @@ class Terminal:
         receiver_ip = data.get("receiver_ip")   # added by server
         responder = data.get("from")
 
+
         if transfer_id not in self.pending_outgoing:
             print(f" Received response for unknown outgoing transfer {transfer_id}")
             return
@@ -497,9 +497,32 @@ class Terminal:
                 'ip': receiver_ip,
                 'port': receiver_port
             })
-            # For private transfers, you could immediately start UDP here
-            # if len(offer['accepted']) == 1 and offer['chat_type'] == 'private':
-            #     self.initiate_udp_to(offer['accepted'][0])
+
+            if offer['chat_type'] == 'private':
+                    if len(offer['accepted']) == 1:
+                        acc = offer['accepted'][0]
+                        self.on_user_input({
+                            "message_name": "SETUP_P2P",
+                            "data": {
+                                "transfer_id": transfer_id,
+                                "filepath": offer["filepath"],
+                                "receiver_ip": acc["ip"],
+                                "receiver_port": acc["port"]
+                            }
+                        })
+            else:  # group chat
+                    # Start transfer for this acceptor immediately
+                        acc = offer['accepted'][-1]  # the one just added
+                        self.on_user_input({
+                            "message_name": "SETUP_P2P",
+                            "data": {
+                                "transfer_id": transfer_id,
+                                "filepath": offer["filepath"],
+                                "receiver_ip": acc["ip"],
+                                "receiver_port": acc["port"]
+                            }
+                        })
+                
         elif status == "REJECT":
             print(f"{responder} rejected the file transfer")
             offer['rejected'].append(responder)

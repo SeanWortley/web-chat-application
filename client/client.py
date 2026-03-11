@@ -10,6 +10,7 @@ import argparse
 import sys
 from gui import GUI
 from terminal import Terminal
+from udp_handler import UDPHandler
 
 
 class Client:
@@ -30,13 +31,17 @@ class Client:
         self.socket = None
         self.connection = None
         self.protocol = None
-
-        self.udp_port = 99999 
         
     def start(self):
         """Start the client connection in a background thread"""
         threading.Thread(target=self._connect_and_run, daemon=True).start()
         
+    def udp_start(self):
+        """Check UDP is started"""
+        if not self.udp_handler.socket:
+            self.udp_handler.start()
+        return self.udp_handler.get_port()
+    
     def _connect_and_run(self):
         """Connect to server and run client loop"""
         try:
@@ -45,6 +50,7 @@ class Client:
 
             self.protocol = Protocol(self)
             self.connection = Connection(self.socket, self)
+            self.udp_handler = UDPHandler(self)
             self.connection.start()
             
             # Start command processor
@@ -107,12 +113,10 @@ class Client:
                                 input_data["data"]["chat_type"],
                                 input_data["data"]["payload"])
             case "MEDIA_OFFER":
-                #handler = self.get_udp_handler() 
-                #port = handler.get_port() if handler else None
 
                 input_data["data"]["from"] = self.loggedInAs
                 input_data["data"]["transfer_id"] = f"transferID_{int(time.time())}"
-                input_data["data"]["sender_port"] = 88888
+                input_data["data"]["sender_port"] = self.udp_start()
                 self.protocol.media_offer(self.connection,
                             input_data["data"]["chat_id"],
                             input_data["data"]["filepath"],
@@ -120,17 +124,23 @@ class Client:
                             input_data["data"]["sender_port"])
                 
             case "MEDIA_RESPONSE":
-                #handler = self.get_udp_handler() 
-                #port = handler.get_port() if handler else None
-
                 input_data["data"]["from"] = self.loggedInAs
-                input_data["data"]["receiver_port"] = 99999
+                input_data["data"]["receiver_port"] = self.udp_start()  # start udp and return port
                 self.protocol.media_response(self.connection,
                             input_data["data"]["chat_id"],
                             input_data["data"]["chat_type"],
                             input_data["data"]["status"],
                             input_data["data"]["transfer_id"],
                             input_data["data"]["receiver_port"])
+                
+            case "SETUP_P2P":
+                self.udp_handler.initiate_udp_transfer(
+                    input_data["data"]["transfer_id"],
+                    input_data["data"]["filepath"],
+                    input_data["data"]["receiver_ip"],
+                    input_data["data"]["receiver_port"]
+                )
+
             case "close_connection":
                 self.connection.close()
             case "quit_program":
@@ -151,22 +161,6 @@ class Client:
     def initialise(self):
         pass
 
-    def get_udp_handler(self):
-        """Get or create UDP handler"""
-        if not self.udp_handler and self.authenticated:
-            # Just create - all logic is inside udp_handler.py
-            from udp_handler import UDPHandler
-            self.udp_handler = UDPHandler(self, callback=self._on_udp_event)
-            self.udp_handler.start()  # Start listening
-        return self.udp_handler
-    
-    def _on_udp_event(self, event, transfer_id, data=None):
-        """Handle UDP events - just forward to UI"""
-        if event == 'progress':
-            self.interface.update_progress(transfer_id, data)
-        elif event == 'complete':
-            self.interface.transfer_complete(transfer_id, data)
-            self.udp_handler = None  # Clear reference
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", type=str, default="127.0.0.1")
