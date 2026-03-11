@@ -262,13 +262,6 @@ class Protocol:
             recipient = context["chat_id"]
             recipient_conn = self.get_user_connection(recipient)
             
-            if recipient_conn:
-                # if the useer is connected this means their  onlinne, therefore we'll continue with the process of sending them the text
-                #self.server.log(f"handle_MSG: from={from_user}, chat_id={chat_id}, chat_type={chat_type}, recipient_conn={recipient_conn}")
-                self.forward_message(recipient_conn, from_user, chat_id, "private", msg_id, timestamp, payload)
-                #self.MSG_DELIVERED(connection, msg_id, [recipient])
-            else:
-                self.server.database.store_offline_message(msg_id, from_user, chat_id, chat_type, None, payload, timestamp)
             context.update({
                 "target_conn": recipient_conn,
                 "recipient": recipient,
