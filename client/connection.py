@@ -1,11 +1,14 @@
 import json
 from queue import Queue
 from threading import Thread
+import socket
+import traceback
 
 class Connection:
     def __init__(self, socket, client):
         self.client = client
         self.socket = socket
+        self.running = True
 
     def start(self):
         thread = Thread(target=self.listen)
@@ -68,8 +71,13 @@ class Connection:
 
 
 
-    def close(self):
-        if not self.socket._closed:
-            import traceback
-            #traceback.print_stack()
-            self.socket.close()
+    
+
+    def close(self): 
+        self.running = False
+        if hasattr(self, 'socket') and self.socket and not self.socket._closed:
+            try:
+                self.socket.close()
+            except Exception as e:
+                pass
+            
