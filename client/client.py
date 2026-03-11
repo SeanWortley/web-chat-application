@@ -135,6 +135,8 @@ class Client:
                 self.connection.close()
             case "quit_program":
                 sys.exit(0)
+            case "shutdown":
+                self.interface.process_shutdown()
             case "REQUEST_UNSENT_MESSAGES":
                 self.protocol.REQUEST_UNSENT_MESSAGES(self.connection)
             case _:

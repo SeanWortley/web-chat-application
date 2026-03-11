@@ -61,7 +61,8 @@ class Protocol:
         username = connection.loggedInAs
         connection.authenticated = False
         connection.loggedInAs = None
-        self.server.active_users.remove(username)
+        if username in self.server.active_users:
+            self.server.active_users.remove(username)
         self.LOGOUT_ACK(connection, username)
 
     def handle_REQUEST_UNSENT_MESSAGES(self, connection, message):
@@ -566,3 +567,8 @@ class Protocol:
                     "error_message": error_message
                 }
             })
+    
+    def SHUTDOWN(self, connection):
+        connection.sendJson({
+                    "message_name": "SHUTDOWN"
+                })

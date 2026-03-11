@@ -4,6 +4,7 @@ from tokenize import group
 import queue
 import os
 import time
+import sys
 
 class Terminal:
 
@@ -38,47 +39,48 @@ class Terminal:
         while self.running:
             text = input("> ").strip()
 
-            if text.startswith("/msg "):
-                parts = text[5:].split(maxsplit=1)
-                if len(parts) == 2:
-                    recipient, message = parts
+            if self.running: # This is to stop the "Invalid command" prompt after pressing enter to exit :)
+                if text.startswith("/msg "):
+                    parts = text[5:].split(maxsplit=1)
+                    if len(parts) == 2:
+                        recipient, message = parts
+                        self.wait_event.clear()
+                        self.send_message(recipient, message)
+                        self.wait_event.wait()
+                    else:
+                        print("Usage: /msg username message")
+                elif text == "1": #Private chat
+                    self.start_private_chat()
+                    self.current_chat = None
+
+                elif text == "2": #Group chat
+                    self.start_group_chat()
+                    self.current_chat = None
+
+                elif text == "3":
                     self.wait_event.clear()
-                    self.send_message(recipient, message)
+                    self.view_groups()
+                    self.wait_event.wait()
+                elif text == "4":
+                    self.wait_event.clear()
+                    self.create_group()
+                    self.wait_event.wait()
+                elif text == "5":
+                    self.wait_event.clear()
+                    self.join_group()
+                    self.wait_event.wait()
+                
+                elif text == "/quit":
+                    self.quit()
+                    break
+
+                elif text in self.commands:
+                    command = self.commands.get(text)
+                    self.wait_event.clear()
+                    command()
                     self.wait_event.wait()
                 else:
-                    print("Usage: /msg username message")
-            elif text == "1": #Private chat
-                self.start_private_chat()
-                self.current_chat = None
-
-            elif text == "2": #Group chat
-                self.start_group_chat()
-                self.current_chat = None
-
-            elif text == "3":
-                self.wait_event.clear()
-                self.view_groups()
-                self.wait_event.wait()
-            elif text == "4":
-                self.wait_event.clear()
-                self.create_group()
-                self.wait_event.wait()
-            elif text == "5":
-                self.wait_event.clear()
-                self.join_group()
-                self.wait_event.wait()
-            
-            elif text == "/quit":
-                self.quit()
-                break
-
-            elif text in self.commands:
-                command = self.commands.get(text)
-                self.wait_event.clear()
-                command()
-                self.wait_event.wait()
-            else:
-                print("Invalid command. Try /help")
+                    print("Invalid command. Try /help")
 
     def process_unsent_batch(self, groups):
         for chat_id, messages in groups.items():
@@ -201,7 +203,7 @@ class Terminal:
         self.process_unread_in_current_chat()
         
         text = input(">> ")
-        while text != "/exit":
+        while text != "/exit" and self.running:
             if text.startswith("/mdt"):
                 parts = text.split(maxsplit=1)
                 if len(parts) == 1:
@@ -238,7 +240,8 @@ class Terminal:
             text = input(">> ")
 
         self.chatting_mode = False
-        self.show_logged_in_menu()
+        if self.running:
+            self.show_logged_in_menu()
 
     def accept_transfer(self, transfer_id):
         if transfer_id not in self.pending_incoming:
@@ -299,7 +302,7 @@ class Terminal:
         print("          /exit - leave")
         self.process_unread_in_current_chat()
         text = input(">> ")
-        while text != "/exit":
+        while text != "/exit" and self.running:
             if text.startswith("/mdt"):
                 parts = text.split(maxsplit=1)
                 if len(parts) == 1:
@@ -335,21 +338,33 @@ class Terminal:
                 })
             text = input(">> ")
         self.chatting_mode = False
-        self.show_logged_in_menu()
+        if self.running:
+            self.show_logged_in_menu()
     
     def resume(self):
         self.wait_event.set()
     
     def displayHelp(self):
+        print("=== MAIN MENU ===")
+        print("/login")
+        print("/register")
+        print("/logout")
+        print("/quit")
+        print("=== CHAT MENU ===")
+        print("1. Enter Private Chat")
+        print("2. Enter Group Chat")
+        print("3. View Groups")
+        print("4. Create Group")
+        print("5. Join Group")
         self.resume()
-        pass # Implement later
 
     def show_logged_out_menu(self):
         self.clear()
         print("=== MAIN MENU ===")
         print("/login")
         print("/register")
-        print("/help")
+        print("/logout")
+        print("/quit")
 
     def show_logged_in_menu(self):
         self.clear()
@@ -385,9 +400,13 @@ class Terminal:
         })
         
     def logout(self):
-        self.on_user_input({
-            "message_name": "LOGOUT"
-        })
+        if self.logged_in:
+            self.on_user_input({
+                "message_name": "LOGOUT"
+            })
+        else:
+            print("You are not logged in.")
+            self.resume()
 
     def quit(self):
         self.running = False
@@ -398,6 +417,8 @@ class Terminal:
         self.on_user_input({
             "message_name": "quit_program"
         })
+        
+        sys.exit()
 
     def create_group(self):
         group_name = input("Enter your desired group name:\n> ")
@@ -564,3 +585,7 @@ class Terminal:
 
     def process_not_group_member(self):
         print("\nYou are not a member of this group! Please exit the chat.\n>>", end="")
+    
+    def process_shutdown(self):
+        print("\nServer has shut down. Press Enter to exit.")
+        self.quit()
