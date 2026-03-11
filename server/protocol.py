@@ -34,12 +34,15 @@ class Protocol:
         hashed_pword = message["data"]["hashed_password"]
 
         user = self.server.database.get_user(username)
-        if (user and hashed_pword == user["hashed_password"]):
+        if username in self.server.active_users:
+            self.AUTH_FAIL(connection, "This user is already logged in!")        
+        elif (user and hashed_pword == user["hashed_password"]):
             connection.authenticated = True
             connection.loggedInAs = username
+            self.server.active_users.append(username)
             self.AUTH_OK(connection)
         else:
-            self.AUTH_FAIL(connection)
+            self.AUTH_FAIL(connection, "Incorrect name or password!")
 
     def handle_CREATE_ACCOUNT(self, connection, message):
         username = message["data"]["username"]
@@ -58,6 +61,7 @@ class Protocol:
         username = connection.loggedInAs
         connection.authenticated = False
         connection.loggedInAs = None
+        self.server.active_users.remove(username)
         self.LOGOUT_ACK(connection, username)
 
     def handle_REQUEST_UNSENT_MESSAGES(self, connection, message):
@@ -107,8 +111,8 @@ class Protocol:
                 "welcome_message": welcome_message}
                 })
 
-    def AUTH_FAIL(self, connection):
-        error_message = "INCORRECT USERNAME OR PASSWORD"
+    def AUTH_FAIL(self, connection, error_message):
+        error_message = error_message
         connection.sendJson({
             "message_name": "AUTH_FAIL",
             "data": {
