@@ -341,27 +341,31 @@ class Protocol:
                 )
             else:
                 # store on pending offers
-                print("Have to store offline offer when the receiver is oflline for later delivery")
+                print("Have to notify that we stored offline offer when the receiver is oflline for later delivery")
                 pass
 
         elif message_name == "MEDIA_RESPONSE":
-        # get original offer
-            original = self.get_and_remove(ctx.get("transfer_id"))
-            if original:
-                sender_conn = self.get_user_connection(original['sender'])
-                if sender_conn:
-                    self.forward_MEDIA_RESPONSE(
-                        sender_conn,
-                        original['sender'],
-                        ctx["from_user"],  # responder
-                        ctx["status"],
-                        ctx["transfer_id"],
-                        ctx.get("receiver_port")
-                    )
-                else:
-                    # Sender is offline store response
-                    print("Have to store response sender is offline")
-                    pass
+                transfer_id = ctx.get("transfer_id")
+                with self.lock:
+                    offer = self.pending_offers.get(transfer_id)
+                    if offer:
+                        responder = ctx["from_user"]
+                        if responder not in offer['responders']:
+                            offer['responders'].add(responder)
+                            # Forward response to the original sender
+                            sender_conn = self.get_user_connection(offer['sender'])
+                            if sender_conn:
+                                self.forward_MEDIA_RESPONSE(
+                                    sender_conn,
+                                    offer['sender'],
+                                    responder,
+                                    ctx["status"],
+                                    transfer_id,
+                                    ctx.get("receiver_port")
+                                )
+                        # else: duplicate response, ignore silently
+                    else:
+                        print(f"No offer found for transfer_id {transfer_id}")
 
     def add_offer(self, transfer_id, sender, sender_port, recipient):
             """Store an offer"""
@@ -370,6 +374,7 @@ class Protocol:
                     'sender': sender,
                     'sender_port': sender_port,
                     'recipient': recipient,
+                    'responders': set(),    # track who has responded(specifically for groups)
                     'timestamp': time.time()
                 }
             print(f"Added offer {transfer_id}")

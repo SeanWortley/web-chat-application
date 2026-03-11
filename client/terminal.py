@@ -252,7 +252,7 @@ class Terminal:
             "message_name": "MEDIA_RESPONSE",
             "data": {
                 "chat_id": offer['sender'],          # who sent the offer
-                "chat_type": offer['chat_type'],
+                "chat_type": "private",
                 "status": "ACCEPT",
                 "transfer_id": transfer_id,
                 "receiver_port": self.client.udp_port  # you'll need to get this
@@ -275,7 +275,7 @@ class Terminal:
             "message_name": "MEDIA_RESPONSE",
             "data": {
                 "chat_id": offer['sender'],
-                "chat_type": offer['chat_type'],
+                "chat_type": "private",
                 "status": "REJECT",
                 "transfer_id": transfer_id,
                 "receiver_port": None  # not needed
@@ -306,7 +306,7 @@ class Terminal:
                     filepath = input("Enter filepath:\n> ").strip()
                 else:
                     filepath = parts[1].strip()
-                self.send_media_offer(recipient, filepath, chat_type="private")
+                self.send_media_offer(group, filepath, chat_type="group")
             
             elif text.startswith("/accept"):
                 parts = text.split()
@@ -468,31 +468,43 @@ class Terminal:
     def handle_incoming_response(self, message):
         """
         Called when a MEDIA_RESPONSE arrives from the server.
-        message contains: transfer_id, status, receiver_port, receiver_ip, from (the responder)
+        Handles both private and group transfers by accumulating responses.
         """
         data = message.get("data", {})
         transfer_id = data.get("transfer_id")
         status = data.get("status")
-        receiver_port = data.get("receiver_port") # 
+        receiver_port = data.get("receiver_port")
         receiver_ip = data.get("receiver_ip")   # added by server
         responder = data.get("from")
 
-        # Look up the original outgoing offer
-        if transfer_id in self.pending_outgoing:
-            offer = self.pending_outgoing[transfer_id]
+        if transfer_id not in self.pending_outgoing:
+            print(f"⚠️ Received response for unknown outgoing transfer {transfer_id}")
+            return
 
-            if status == "ACCEPT":
-                print(f"{responder} accepted the file transfer!")
-                #self.initiateUDP(receiver_ip, receiver_port)
-            elif status == "REJECT":
-                print(f" {responder} rejected the file transfer")
-            else:
-                print(f"Unknown response status: {status}")
+        offer = self.pending_outgoing[transfer_id]
 
-            # Clean up
-            del self.pending_outgoing[transfer_id]
+        # Initialize lists if not present (for group transfers)
+        if 'accepted' not in offer:
+            offer['accepted'] = []
+        if 'rejected' not in offer:
+            offer['rejected'] = []
+
+        if status == "ACCEPT":
+            print(f"✅ {responder} accepted the file transfer!")
+            # Store acceptor's connection details for later UDP transfer
+            offer['accepted'].append({
+                'user': responder,
+                'ip': receiver_ip,
+                'port': receiver_port
+            })
+            # For private transfers, you could immediately start UDP here
+            # if len(offer['accepted']) == 1 and offer['chat_type'] == 'private':
+            #     self.initiate_udp_to(offer['accepted'][0])
+        elif status == "REJECT":
+            print(f"❌ {responder} rejected the file transfer")
+            offer['rejected'].append(responder)
         else:
-            print(f"Warning: Received response for unknown outgoing transfer {transfer_id}")
+            print(f"⚠️ Unknown response status: {status}")
 
 
     def handle_incoming_offer(self, message):
