@@ -18,6 +18,7 @@ class Server:
         self.socket.listen()
         #self.groups = {}  # stores groups: {group_name: [username1, username2]}
         self.connections = []  # track all active connections
+        self.active_users = []
 
     def listen(self):
         while True:
