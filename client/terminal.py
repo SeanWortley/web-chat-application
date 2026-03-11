@@ -255,7 +255,7 @@ class Terminal:
                 "chat_type": "private",
                 "status": "ACCEPT",
                 "transfer_id": transfer_id,
-                "receiver_port": self.client.udp_port  # you'll need to get this
+                #"receiver_port": self.client.udp_port  # you'll need to get this
             }
         })
         
