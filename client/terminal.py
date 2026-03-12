@@ -274,7 +274,7 @@ class Terminal:
         
         # Remove from pending
         del self.pending_incoming[transfer_id]
-        print(f" Accepted transfer {transfer_id}")
+        print(f"You accepted transfer {transfer_id}.")
 
 
     def reject_transfer(self, transfer_id):
@@ -295,7 +295,7 @@ class Terminal:
         })
         
         del self.pending_incoming[transfer_id]
-        print(f" Rejected transfer {transfer_id}") 
+        print(f"You rejected transfer {transfer_id}.") 
 
     def start_group_chat(self):
         group = input("Which chat room would you like to enter?\n> ")
@@ -526,7 +526,7 @@ class Terminal:
             offer['rejected'] = []
 
         if status == "ACCEPT":
-            print(f" {responder} accepted the file transfer!")
+            print(f"{responder} accepted your file transfer.")
             # Store acceptor's connection details for later UDP transfer
             offer['accepted'].append({
                 'user': responder,
@@ -537,7 +537,7 @@ class Terminal:
             # if len(offer['accepted']) == 1 and offer['chat_type'] == 'private':
             #     self.initiate_udp_to(offer['accepted'][0])
         elif status == "REJECT":
-            print(f"{responder} rejected the file transfer")
+            print(f"{responder} rejected your file transfer.")
             offer['rejected'].append(responder)
         else:
             print(f"Unknown response status: {status}")

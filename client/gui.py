@@ -608,6 +608,7 @@ class GUI:
                         "filename": offer['filename']
                     }
                 })
+                self.display(f"You accepted transfer {transfer_id} from {sender}.")
             else:
                 self.on_user_input({
                     "message_name": "MEDIA_RESPONSE",
@@ -618,6 +619,7 @@ class GUI:
                         "transfer_id": transfer_id
                     }
                 })
+                self.display(f"You rejected transfer {transfer_id} from {sender}.")
 
         self.root.after(0, show_offer)
 
@@ -645,7 +647,7 @@ class GUI:
                 'ip': receiver_ip,
                 'port': receiver_port
             })
-            self.root.after(0, lambda: self.display(f"{responder} accepted your file transfer!"))
+            self.root.after(0, lambda: self.display(f"{responder} accepted your file transfer."))
 
         elif status == "REJECT":
             offer['rejected'].append(responder)
