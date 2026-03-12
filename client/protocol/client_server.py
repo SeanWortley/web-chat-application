@@ -5,7 +5,7 @@ import uuid
 import json
 from pathlib import Path
 
-class Protocol:
+class CSProtocol:
     def __init__(self, client):
         self.client = client
         self.handlers = {

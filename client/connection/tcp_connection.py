@@ -4,7 +4,7 @@ from threading import Thread
 import socket
 import traceback
 
-class Connection:
+class TCPConnection:
     def __init__(self, socket, client):
         self.client = client
         self.socket = socket
@@ -50,7 +50,7 @@ class Connection:
                 self.client.protocol.handleIncoming(self, message)
 
         except Exception as e:
-            print(f"Connection error: {e}")
+            print(f"TCPConnection error: {e}")
         finally:
             self.close()
 

@@ -2,8 +2,8 @@ from socket import *
 import time
 import queue
 import threading
-from connection import Connection
-from protocol import Protocol
+from connection import TCPConnection, UDPConnection
+from protocol import CSProtocol, P2PProtocol
 from terminal import Terminal
 from database import Database
 import argparse
@@ -43,8 +43,8 @@ class Client:
             self.socket = socket(AF_INET, SOCK_STREAM)
             self.socket.connect((self.host, self.port))
 
-            self.protocol = Protocol(self)
-            self.connection = Connection(self.socket, self)
+            self.protocol = CSProtocol(self)
+            self.connection = TCPConnection(self.socket, self)
             self.connection.start()
             
             # Start command processor
