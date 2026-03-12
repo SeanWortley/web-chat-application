@@ -190,18 +190,12 @@ class CSProtocol:
         connection.sendJson(outgoing)
 
         
-    def media_offer(self, connection, chat_id, filepath, chat_type, sender_port):
+    def MEDIA_OFFER(self, connection, chat_id, filepath, chat_type, sender_port):
 
-        # Validate path
-        file_path = Path(filepath)
-        if not file_path.exists():
-            print("Checking:", file_path.resolve())
-            print(f"File not found: {filepath}")
-            return
     
+        file_path = Path(filepath)
         filename = file_path.name
         filesize = file_path.stat().st_size
-        transfer_id = f"transferID_{int(time.time())}"
 
         connection.sendJson({
             "message_name": "MEDIA_OFFER",
@@ -209,19 +203,16 @@ class CSProtocol:
                 "from": self.client.loggedInAs,
                 "chat_id": chat_id,
                 "chat_type": chat_type,
-                "transfer_id": transfer_id,
                 "filename": filename,
                 "filesize": filesize,
                 "sender_port": sender_port
-
             } 
         })
-
 
     def handle_incoming_media_offer(self, connection, message):
         self.client.interface.handle_incoming_offer(message)
     
-    def media_response(self, connection, chat_id, chat_type, status, transfer_id, receiver_port):
+    def MEDIA_RESPONSE(self, connection, chat_id, chat_type, status, transfer_id, receiver_port):
         connection.sendJson({
         "message_name": "MEDIA_RESPONSE",
         "data": {

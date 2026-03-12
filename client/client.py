@@ -29,7 +29,7 @@ class Client:
         # Socket and protocol will be initialized in start()
         self.socket = None
         self.connection = None
-        self.protocol = None
+        self.cs_protocol = None
 
         self.udp_port = 99999 
         
@@ -43,7 +43,7 @@ class Client:
             self.socket = socket(AF_INET, SOCK_STREAM)
             self.socket.connect((self.host, self.port))
 
-            self.protocol = CSProtocol(self)
+            self.cs_protocol = CSProtocol(self)
             self.connection = TCPConnection(self.socket, self)
             self.connection.start()
             
@@ -73,7 +73,7 @@ class Client:
     def _handle_user_input(self, input_data):
         """Actually handle the user input"""
         # Make sure protocol is ready
-        if not hasattr(self, 'protocol') or self.protocol is None:
+        if not hasattr(self, 'protocol') or self.cs_protocol is None:
             print("Protocol not ready, requeueing...")
             self.command_queue.put(input_data)
             time.sleep(0.1)
@@ -81,28 +81,28 @@ class Client:
             
         match input_data["message_name"]:
             case "AUTH":
-                self.protocol.AUTH(self.connection, 
+                self.cs_protocol.AUTH(self.connection, 
                                   input_data["data"]["username"], 
                                   input_data["data"]["hashed_password"])
             case "CREATE_ACCOUNT":
-                self.protocol.CREATE_ACCOUNT(self.connection, 
+                self.cs_protocol.CREATE_ACCOUNT(self.connection, 
                                            input_data["data"]["username"], 
                                            input_data["data"]["hashed_password"])
             case "LOGOUT":
-                self.protocol.LOGOUT(self.connection)
+                self.cs_protocol.LOGOUT(self.connection)
             case "CREATE_GROUP":
-                self.protocol.CREATE_GROUP(self.connection, 
+                self.cs_protocol.CREATE_GROUP(self.connection, 
                                           input_data["data"]["group_name"])
             case "JOIN_GROUP":
-                self.protocol.JOIN_GROUP(self.connection, 
+                self.cs_protocol.JOIN_GROUP(self.connection, 
                                         input_data["data"]["group_name"])
             case "GROUP_LIST":
-                self.protocol.GROUP_LIST(self.connection)
+                self.cs_protocol.GROUP_LIST(self.connection)
             case "MSG":  
                 input_data["data"]["from"] = self.loggedInAs
                 input_data["data"]["msg_id"] = f"msg_{int(time.time())}"
                 input_data["data"]["timestamp"] = time.time()
-                self.protocol.MSG(self.connection, 
+                self.cs_protocol.MSG(self.connection, 
                                 input_data["data"]["chat_id"],
                                 input_data["data"]["chat_type"],
                                 input_data["data"]["payload"])
@@ -111,9 +111,8 @@ class Client:
                 #port = handler.get_port() if handler else None
 
                 input_data["data"]["from"] = self.loggedInAs
-                input_data["data"]["transfer_id"] = f"transferID_{int(time.time())}"
                 input_data["data"]["sender_port"] = 88888
-                self.protocol.media_offer(self.connection,
+                self.cs_protocol.MEDIA_OFFER(self.connection,
                             input_data["data"]["chat_id"],
                             input_data["data"]["filepath"],
                             input_data["data"]["chat_type"],
@@ -125,7 +124,7 @@ class Client:
 
                 input_data["data"]["from"] = self.loggedInAs
                 input_data["data"]["receiver_port"] = 99999
-                self.protocol.media_response(self.connection,
+                self.cs_protocol.MEDIA_RESPONSE(self.connection,
                             input_data["data"]["chat_id"],
                             input_data["data"]["chat_type"],
                             input_data["data"]["status"],
@@ -138,7 +137,7 @@ class Client:
             case "shutdown":
                 self.interface.process_shutdown()
             case "REQUEST_UNSENT_MESSAGES":
-                self.protocol.REQUEST_UNSENT_MESSAGES(self.connection)
+                self.cs_protocol.REQUEST_UNSENT_MESSAGES(self.connection)
             case _:
                 print(f"Unknown command: {input_data}")
 

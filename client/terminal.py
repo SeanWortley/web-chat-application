@@ -5,6 +5,7 @@ import queue
 import os
 import time
 import sys
+from zipfile import Path
 
 class Terminal:
 
@@ -309,6 +310,11 @@ class Terminal:
                     filepath = input("Enter filepath:\n> ").strip()
                 else:
                     filepath = parts[1].strip()
+                    file_path = Path(filepath)
+                if not file_path.exists():
+                    print("Checking:", file_path.resolve())
+                    print(f"File not found: {filepath}")
+                    continue
                 self.send_media_offer(group, filepath, chat_type="group")
             
             elif text.startswith("/accept"):
