@@ -31,7 +31,10 @@ class Client:
         self.connection = None
         self.cs_protocol = None
 
-        self.udp_port = 99999 
+        self.p2p_protocol = None
+        self.udp_connection = None
+
+        self.pending_transfers = {}
         
     def start(self):
         """Start the client connection in a background thread"""
@@ -46,6 +49,12 @@ class Client:
             self.cs_protocol = CSProtocol(self)
             self.connection = TCPConnection(self.socket, self)
             self.connection.start()
+
+            self.p2p_protocol = P2PProtocol(self, None)
+            self.udp_connection = UDPConnection(self.p2p_protocol)
+
+            self.p2p_protocol.udp = self.udp_connection
+            self.udp_port = self.udp_connection.start()
             
             # Start command processor
             self.process_commands()
@@ -111,7 +120,7 @@ class Client:
                 #port = handler.get_port() if handler else None
 
                 input_data["data"]["from"] = self.loggedInAs
-                input_data["data"]["sender_port"] = 88888
+                input_data["data"]["sender_port"] = self.udp_port
                 self.cs_protocol.MEDIA_OFFER(self.connection,
                             input_data["data"]["chat_id"],
                             input_data["data"]["transfer_id"],
@@ -120,11 +129,11 @@ class Client:
                             input_data["data"]["sender_port"])
                 
             case "MEDIA_RESPONSE":
-                #handler = self.get_udp_handler() 
-                #port = handler.get_port() if handler else None
-
                 input_data["data"]["from"] = self.loggedInAs
-                input_data["data"]["receiver_port"] = 99999
+                input_data["data"]["receiver_port"] = self.udp_port
+                filename = input_data["data"].get("filename")
+                if filename and input_data["data"]["status"].upper() == "ACCEPT":
+                    self.p2p_protocol.recv_filenames[input_data["data"]["transfer_id"]] = filename
                 self.cs_protocol.MEDIA_RESPONSE(self.connection,
                             input_data["data"]["chat_id"],
                             input_data["data"]["chat_type"],

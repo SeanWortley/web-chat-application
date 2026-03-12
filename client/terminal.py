@@ -252,16 +252,16 @@ class Terminal:
             return
         
         offer = self.pending_incoming[transfer_id]
-        
+
         # Send MEDIA_RESPONSE with status ACCEPT
         self.on_user_input({
             "message_name": "MEDIA_RESPONSE",
             "data": {
-                "chat_id": offer['sender'],          # who sent the offer
+                "chat_id": offer['sender'],
                 "chat_type": "private",
                 "status": "ACCEPT",
                 "transfer_id": transfer_id,
-                #"receiver_port": self.client.udp_port  # you'll need to get this
+                "filename": offer['filename']
             }
         })
         
@@ -476,7 +476,7 @@ class Terminal:
         if not os.path.exists(filepath):
             print(f"File not found: {filepath}")
             return
-        transfer_id = int(uuid.uuid4())
+        transfer_id = uuid.uuid4().int & 0xFFFFFFFF
         self.pending_outgoing[transfer_id] = {
             'recipient': chat_id,
             'filepath': filepath,
@@ -598,3 +598,6 @@ class Terminal:
     def process_shutdown(self):
         print("\nServer has shut down. Press Enter to exit.")
         self.quit()
+
+    def on_file_received(self, filepath):
+        print(f"[UDP] Transfer complete -> {filepath}")

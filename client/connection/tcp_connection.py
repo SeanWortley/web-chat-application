@@ -80,4 +80,3 @@ class TCPConnection:
                 self.socket.close()
             except Exception as e:
                 pass
-            

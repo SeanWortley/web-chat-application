@@ -197,6 +197,8 @@ class CSProtocol:
         filename = file_path.name
         filesize = file_path.stat().st_size
 
+        self.client.pending_transfers[transfer_id] = filepath
+
         connection.sendJson({
             "message_name": "MEDIA_OFFER",
             "data": {
@@ -227,7 +229,33 @@ class CSProtocol:
     })
     
     def handle_incoming_media_response(self, connection, message):
+
+        data = message["data"]
+
+        if data["status"].lower() != "accept":
+            self.client.interface.display("File transfer declined.")
+            return
+
+        transfer_id = data["transfer_id"]
+        receiver_ip = data["receiver_ip"]
+        receiver_port = data["receiver_port"]
+
+        filepath = self.client.pending_transfers.get(transfer_id)
+
+        if not filepath:
+            print(f"Unknown transfer id {transfer_id}")
+            return
+
+        # Start UDP transfer
+        self.client.p2p_protocol.initiate_udp_transfer(
+            transfer_id,
+            filepath,
+            receiver_ip,
+            receiver_port
+        )
+
         self.client.interface.handle_incoming_response(message)
+
     
     def handle_MSG(self, connection, message):
         #print("Ekse, you have a new message coming through")
