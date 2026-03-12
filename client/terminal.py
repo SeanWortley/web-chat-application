@@ -471,8 +471,6 @@ class Terminal:
         self.pending_outgoing[transfer_id] = {
             'recipient': chat_id,
             'filepath': filepath,
-            'filename': os.path.basename(filepath),
-            'filesize': os.path.getsize(filepath),
             'chat_type': chat_type,
             'status': 'pending'
         }
@@ -528,7 +526,7 @@ class Terminal:
                                 "transfer_id": transfer_id,
                                 "filepath": offer["filepath"],
                                 "receiver_ip": acc["ip"],
-                                "receiver_port": acc["port"]
+                                "receiver_port": int(acc["port"])
                             }
                         })
             else:  # group chat
