@@ -601,7 +601,7 @@ class GUI:
                 self.on_user_input({
                     "message_name": "MEDIA_RESPONSE",
                     "data": {
-                        "chat_id": offer['sender'],
+                        "chat_id": offer['chat_id'],
                         "chat_type": offer['chat_type'],
                         "status": "ACCEPT",
                         "transfer_id": transfer_id,
@@ -612,7 +612,7 @@ class GUI:
                 self.on_user_input({
                     "message_name": "MEDIA_RESPONSE",
                     "data": {
-                        "chat_id": offer['sender'],
+                        "chat_id": offer['chat_id'],
                         "chat_type": offer['chat_type'],
                         "status": "REJECT",
                         "transfer_id": transfer_id
