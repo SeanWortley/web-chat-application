@@ -218,7 +218,7 @@ class Terminal:
             elif text.startswith("/accept"):
                 parts = text.split()
                 if len(parts) == 2:
-                    transfer_id = parts[1]
+                    transfer_id = int(parts[1])
                     self.accept_transfer(transfer_id)
                 else:
                     print("Usage: /accept <transfer_id>")
@@ -226,7 +226,7 @@ class Terminal:
             elif text.startswith("/reject"):
                 parts = text.split()
                 if len(parts) == 2:
-                    transfer_id = parts[1]
+                    transfer_id = int(parts[1])
                     self.reject_transfer(transfer_id)
                 else:
                     print("Usage: /reject <transfer_id>")
@@ -318,7 +318,7 @@ class Terminal:
             elif text.startswith("/accept"):
                 parts = text.split()
                 if len(parts) == 2:
-                    transfer_id = parts[1]
+                    transfer_id = int(parts[1])
                     self.accept_transfer(transfer_id)
                 else:
                     print("Usage: /accept <transfer_id>")
@@ -326,7 +326,7 @@ class Terminal:
             elif text.startswith("/reject"):
                 parts = text.split()
                 if len(parts) == 2:
-                    transfer_id = parts[1]
+                    transfer_id = int(parts[1])
                     self.reject_transfer(transfer_id)
                 else:
                     print("Usage: /reject <transfer_id>")
@@ -489,6 +489,7 @@ class Terminal:
             "message_name": "MEDIA_OFFER",
             "data": {
                     "chat_id": chat_id,
+                    "transfer_id": transfer_id,
                     "filepath": filepath,
                     "chat_type": chat_type,
             }  

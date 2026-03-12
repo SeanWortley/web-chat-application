@@ -114,6 +114,7 @@ class Client:
                 input_data["data"]["sender_port"] = 88888
                 self.cs_protocol.MEDIA_OFFER(self.connection,
                             input_data["data"]["chat_id"],
+                            input_data["data"]["transfer_id"],
                             input_data["data"]["filepath"],
                             input_data["data"]["chat_type"],
                             input_data["data"]["sender_port"])

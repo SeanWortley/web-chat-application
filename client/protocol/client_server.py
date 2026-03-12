@@ -190,12 +190,11 @@ class CSProtocol:
         connection.sendJson(outgoing)
 
         
-    def MEDIA_OFFER(self, connection, chat_id, filepath, chat_type, sender_port):
+    def MEDIA_OFFER(self, connection, chat_id, transfer_id, filepath, chat_type, sender_port):
 
     
         file_path = Path(filepath)
         filename = file_path.name
-        transfer_id = str(uuid.uuid4())
         filesize = file_path.stat().st_size
 
         connection.sendJson({
