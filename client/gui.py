@@ -188,53 +188,80 @@ class GUI:
         if not hasattr(self, 'database') or not self.database:
             print("No database")
             return
-        logs = self.database.get_private_chat_history(chat_id)
-        #print(f"logs: {logs}")
-        if not logs:
-            return
-        
+
         window = self.chat_windows.get(chat_id)
-        for child in window.winfo_children():
-            print(f"child: {type(child)}, {child}")
         if not window:
+            return
+
+        chat_display = None
+        for child in window.winfo_children():
+            if isinstance(child, scrolledtext.ScrolledText):
+                chat_display = child
+                break
+            if isinstance(child, tk.Frame):
+                for grandchild in child.winfo_children():
+                    if isinstance(grandchild, scrolledtext.ScrolledText):
+                        chat_display = grandchild
+                        break
+                if chat_display:
+                    break
+
+        if not chat_display:
+            return
+
+        logs = self.database.get_chat_history(chat_id, "private")
+
+        chat_display.delete("1.0", tk.END)
+        if not logs:
             return
 
         for message in logs:
             from_user = message.get("from_user")
             msg_text = message.get("msg_text")
             sender = "You" if from_user == self.loggedInAs else from_user
+            chat_display.insert(tk.END, f"{sender}: {msg_text}\n")
 
-            for child in window.winfo_children():
-                for grandchild in child.winfo_children():
-                    if isinstance(grandchild, scrolledtext.ScrolledText):
-                        grandchild.insert(tk.END, f"{sender}: {msg_text}\n")
-                        grandchild.see(tk.END)
-                        break
+        chat_display.see(tk.END)
 
     def load_group_logs(self, group_id):
         print(f"load_group_logs: group_id={group_id}")
         if not hasattr(self, 'database') or not self.database:
             print("No database")
             return
-        logs = self.database.get_group_chat_history(group_id)
-        if not logs:
-            return
-        
+
         window = self.chat_windows.get(group_id)
         if not window:
+            return
+
+        chat_display = None
+        for child in window.winfo_children():
+            if isinstance(child, scrolledtext.ScrolledText):
+                chat_display = child
+                break
+            if isinstance(child, tk.Frame):
+                for grandchild in child.winfo_children():
+                    if isinstance(grandchild, scrolledtext.ScrolledText):
+                        chat_display = grandchild
+                        break
+                if chat_display:
+                    break
+
+        if not chat_display:
+            return
+
+        logs = self.database.get_chat_history(group_id, "group")
+
+        chat_display.delete("1.0", tk.END)
+        if not logs:
             return
 
         for message in logs:
             from_user = message.get("from_user")
             msg_text = message.get("msg_text")
             sender = "You" if from_user == self.loggedInAs else from_user
+            chat_display.insert(tk.END, f"{sender}: {msg_text}\n")
 
-            for child in window.winfo_children():
-                for grandchild in child.winfo_children():
-                    if isinstance(grandchild, scrolledtext.ScrolledText):
-                        grandchild.insert(tk.END, f"{sender}: {msg_text}\n")
-                        grandchild.see(tk.END)
-                        break
+        chat_display.see(tk.END)
     
     def start_group_chat(self):
         # Similar to the start_private_chat method, this will be called when the user clicks the "Group Chat" button. It will prompt the user to enter the name of the group they want to chat in and then open a new chat window for that group conversation.

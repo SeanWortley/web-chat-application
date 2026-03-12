@@ -181,7 +181,7 @@ class Terminal:
             print(f'\n{from_user}: {data.get("payload")}\n>> ', end="")
 
     def load_private_logs(self, chat_id):
-        logs = self.database.get_private_chat_history(chat_id) #Dictionary
+        logs = self.database.get_chat_history(chat_id, "private")
         for message in logs:
             from_user = message.get("from_user")
             msg_text = message.get("msg_text")
@@ -190,7 +190,7 @@ class Terminal:
         print("-------------------------------------")
         
     def load_group_logs(self, chat_id):
-        logs = self.database.get_group_chat_history(chat_id)
+        logs = self.database.get_chat_history(chat_id, "group")
         for message in logs:
             from_user = message.get("from_user")
             msg_text = message.get("msg_text")
