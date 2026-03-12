@@ -17,7 +17,6 @@ class Terminal:
             "/login": self.login,
             "/register": self.register,
             "/logout": self.logout,
-            "/msg": self.send_message,
             "/current": self.print_current
         }
         self.on_user_input = None
@@ -43,16 +42,7 @@ class Terminal:
             text = input("> ").strip()
 
             if self.running: # This is to stop the "Invalid command" prompt after pressing enter to exit :)
-                if text.startswith("/msg "):
-                    parts = text[5:].split(maxsplit=1)
-                    if len(parts) == 2:
-                        recipient, message = parts
-                        self.wait_event.clear()
-                        self.send_message(recipient, message)
-                        self.wait_event.wait()
-                    else:
-                        print("Usage: /msg username message")
-                elif text == "1": #Private chat
+                if text == "1": #Private chat
                     self.start_private_chat()
                     self.current_chat = None
 
