@@ -233,7 +233,7 @@ class CSProtocol:
         data = message["data"]
 
         if data["status"].lower() != "accept":
-            self.client.interface.display("File transfer declined.")
+            self.client.interface.handle_incoming_response(message)
             return
 
         transfer_id = data["transfer_id"]
