@@ -42,6 +42,7 @@ class Terminal:
             text = input("> ").strip()
 
             if self.running: # This is to stop the "Invalid command" prompt after pressing enter to exit :)
+
                 if text == "1": #Private chat
                     self.start_private_chat()
                     self.current_chat = None
@@ -72,6 +73,23 @@ class Terminal:
                     self.wait_event.clear()
                     command()
                     self.wait_event.wait()
+
+                elif text.startswith("/accept"):
+                    parts = text.split()
+                    if len(parts) == 2:
+                        transfer_id = int(parts[1])
+                        self.accept_transfer(transfer_id)
+                    else:
+                        print("Usage: /accept <transfer_id>")
+
+                elif text.startswith("/reject"):
+                    parts = text.split()
+                    if len(parts) == 2:
+                        transfer_id = int(parts[1])
+                        self.reject_transfer(transfer_id)
+                    else:
+                        print("Usage: /reject <transfer_id>")
+
                 else:
                     print("Invalid command. Try /help")
 
@@ -248,7 +266,7 @@ class Terminal:
             "message_name": "MEDIA_RESPONSE",
             "data": {
                 "chat_id": offer['sender'],
-                "chat_type": "private",
+                "chat_type": offer['chat_type'],
                 "status": "ACCEPT",
                 "transfer_id": transfer_id,
                 "filename": offer['filename']
@@ -271,10 +289,9 @@ class Terminal:
             "message_name": "MEDIA_RESPONSE",
             "data": {
                 "chat_id": offer['sender'],
-                "chat_type": "private",
+                "chat_type": offer['chat_type'],
                 "status": "REJECT",
-                "transfer_id": transfer_id,
-                "receiver_port": None  # not needed
+                "transfer_id": transfer_id
             }
         })
         

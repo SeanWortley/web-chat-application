@@ -567,26 +567,28 @@ class GUI:
                 f"Transfer ID: {transfer_id}\n\n"
                 f"Accept?"
             )
+            offer = self.pending_incoming.pop(transfer_id, None)
+            if not offer:
+                return
             if accepted:
                 self.on_user_input({
                     "message_name": "MEDIA_RESPONSE",
                     "data": {
-                        "chat_id": self.pending_incoming[transfer_id]['sender'],
-                        "chat_type": "private",
+                        "chat_id": offer['sender'],
+                        "chat_type": offer['chat_type'],
                         "status": "ACCEPT",
                         "transfer_id": transfer_id,
-                        "filename": self.pending_incoming[transfer_id]['filename']
+                        "filename": offer['filename']
                     }
                 })
             else:
                 self.on_user_input({
                     "message_name": "MEDIA_RESPONSE",
                     "data": {
-                        "chat_id": self.pending_incoming[transfer_id]['sender'],
-                        "chat_type": "private",
+                        "chat_id": offer['sender'],
+                        "chat_type": offer['chat_type'],
                         "status": "REJECT",
-                        "transfer_id": transfer_id,
-                        "receiver_port": None
+                        "transfer_id": transfer_id
                     }
                 })
 
