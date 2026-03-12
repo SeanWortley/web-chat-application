@@ -24,7 +24,7 @@ run-server:
 	python3 -m server.src.app.server $(if $(strip $(server_args)),$(server_args),--host $(host) --port $(port))
 
 run-client:
-	python3 client/client.py $(if $(strip $(client_args)),$(client_args),$(CLIENT_ARGS))
+	python3 -m client.src.app.client $(if $(strip $(client_args)),$(client_args),$(CLIENT_ARGS))
 
 run-client-gui:
 	$(MAKE) run-client mode=gui host=$(host) port=$(port)

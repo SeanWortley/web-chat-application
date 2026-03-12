@@ -6,7 +6,6 @@ import tkinter as tk
 from tkinter import scrolledtext, simpledialog, messagebox
 from hashlib import sha256
 import queue
-import database
 
 class GUI:
     def __init__(self):
