@@ -20,7 +20,7 @@ class UDPConnection:
         self.running = True
         self.listener_thread = threading.Thread(target=self._listen, daemon=True)
         self.listener_thread.start()
-        print(f"[UDP] Listening on port {self.port}")
+        #print(f"[UDP] Listening on port {self.port}")
         return self.port
     
     def _listen(self):
@@ -39,7 +39,7 @@ class UDPConnection:
         self.running = False
         if self.socket:
             self.socket.close()
-        print("[UDP] Stopped")
+        #print("[UDP] Stopped")
 
     def retransmit(self, transfer_id, chunk_index, peer_ip, peer_port):
         """Request retransmission of a specific chunk."""

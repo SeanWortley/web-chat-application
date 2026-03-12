@@ -4,7 +4,6 @@ import queue
 import threading
 from connection import TCPConnection, UDPConnection
 from protocol import CSProtocol, P2PProtocol
-from terminal import Terminal
 from database import Database
 import argparse
 import sys
@@ -179,6 +178,45 @@ class Client:
         elif event == 'complete':
             self.interface.transfer_complete(transfer_id, data)
             self.udp_handler = None  # Clear reference
+            
+    def accept_transfer(self, transfer_id):
+        if transfer_id not in self.interface.pending_incoming:
+            self.interface.display(f"No pending offer with ID {transfer_id}")
+            return
+
+        offer = self.interface.pending_incoming[transfer_id]
+        del self.interface.pending_incoming[transfer_id]
+
+        self.send({
+            "message_name": "MEDIA_RESPONSE",
+            "data": {
+                "chat_id": offer['sender'],
+                "chat_type": "private",
+                "status": "ACCEPT",
+                "transfer_id": transfer_id,
+                "filename": offer['filename']
+            }
+        })
+
+    def reject_transfer(self, transfer_id):
+        if transfer_id not in self.interface.pending_incoming:
+            self.interface.display(f"No pending offer with ID {transfer_id}")
+            return
+
+        offer = self.interface.pending_incoming[transfer_id]
+        del self.interface.pending_incoming[transfer_id]
+
+        self.send({
+            "message_name": "MEDIA_RESPONSE",
+            "data": {
+                "chat_id": offer['sender'],
+                "chat_type": "private",
+                "status": "REJECT",
+                "transfer_id": transfer_id,
+                "receiver_port": None
+            }
+        })
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", type=str, default="127.0.0.1")
@@ -196,6 +234,8 @@ def main():
     client.start()
     # Run GUI in main thread
     interface.start()
+
+    
 
 if __name__ == "__main__":
     main()

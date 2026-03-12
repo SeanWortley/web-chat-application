@@ -58,14 +58,7 @@ class P2PProtocol:
 
     def initiate_udp_transfer(self, transfer_id, filepath, peer_ip, peer_port):
 
-        file_path = Path(filepath)
-
-        if not file_path.exists():
-            print(f"File not found: {filepath}")
-            return
-
         seq = 0
-
         with open(filepath, "rb") as f:
             while True:
 
