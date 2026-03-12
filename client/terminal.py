@@ -6,8 +6,7 @@ import os
 import time
 import sys
 import uuid
-import uuid
-from zipfile import Path
+from pathlib import Path
 
 class Terminal:
 

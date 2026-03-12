@@ -57,7 +57,7 @@ class Server:
     
     def quit(self):
         print("Shutting down")
-        self.runnin = False
+        self.running = False
         for connection in self.connections[:]:
             try:
                 self.protocol.SHUTDOWN(connection)

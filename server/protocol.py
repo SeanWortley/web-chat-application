@@ -194,6 +194,7 @@ class Protocol:
             recipient = context["chat_id"]
             if recipient == context.get("from_user"):
                 self.MSG_NAK(connection, context["chat_id"], "You can't send a message to yourself")
+                return
             if not self.server.database.get_user(context["chat_id"]):
                 self.MSG_NAK(connection, context.get("chat_id"), "Recipient doesn't exist")
                 return
@@ -437,6 +438,9 @@ class Protocol:
 
     def forward_MEDIA_OFFER(self, recipient_conn, from_user, chat_id, chat_type, transfer_id, filename, filesize, sender_port):
             media_offer_sender_conn = self.get_user_connection(from_user)
+            if not media_offer_sender_conn:
+                self.server.log(f"MEDIA_OFFER skipped: sender connection not found for '{from_user}'")
+                return
             md_offer_sender_ip = media_offer_sender_conn.socket.getpeername()[0]
             recipient_conn.sendJson({
                 "message_name": "MEDIA_OFFER",
@@ -454,6 +458,9 @@ class Protocol:
 
     def forward_MEDIA_RESPONSE(self, recipient_conn, to_user, from_user, status, transfer_id, receiver_port):
         media_response_sender_conn = self.get_user_connection(from_user)
+        if not media_response_sender_conn:
+            self.server.log(f"MEDIA_RESPONSE skipped: sender connection not found for '{from_user}'")
+            return
         md_response_sender_ip = media_response_sender_conn.socket.getpeername()[0]
         recipient_conn.sendJson({
             "message_name": "MEDIA_RESPONSE",

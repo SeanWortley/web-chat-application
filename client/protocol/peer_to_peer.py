@@ -1,5 +1,6 @@
 import struct
 import time
+import threading
 from pathlib import Path
 
 
@@ -57,6 +58,19 @@ class P2PProtocol:
             self.udp.send(packet, (peer_ip, peer_port))
 
     def initiate_udp_transfer(self, transfer_id, filepath, peer_ip, peer_port):
+        thread = threading.Thread(
+            target=self._send_file,
+            args=(transfer_id, filepath, peer_ip, peer_port),
+            daemon=True
+        )
+        thread.start()
+
+    def _send_file(self, transfer_id, filepath, peer_ip, peer_port):
+
+        file_path = Path(filepath)
+        if not file_path.exists():
+            print(f"File not found: {filepath}")
+            return
 
         seq = 0
         with open(filepath, "rb") as f:
