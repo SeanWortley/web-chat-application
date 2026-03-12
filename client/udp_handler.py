@@ -148,9 +148,6 @@ class UDPHandler:
             print(f"[UDP] Packet too short from {addr}, ignoring")
             return
         
-        print("Received bytes:", data)
-        print("Length:", len(data))
-        
         packet_type, transfer_id, seq = struct.unpack("!BII", data[:9])
         chunk = data[9:]
         key = (addr, transfer_id)
@@ -167,7 +164,7 @@ class UDPHandler:
         if seq == expected:
             file.write(chunk)
             self.recv_expected[key] += 1
-            self.send_ack(addr, transfer_id, seq)
+            self.receiver_send_ack(addr, transfer_id, seq)
 
             while self.recv_expected[key] in buffer:
                 file.write(buffer.pop(self.recv_expected[key]))
@@ -175,11 +172,11 @@ class UDPHandler:
 
         elif seq > expected:
             buffer[seq] = chunk
-            self.send_nack(addr, transfer_id, expected)
+            self.receiver_send_nack(addr, transfer_id, expected)  # Fixed: was self.send_nack
 
         else:
             # Duplicate packet
-            self.send_ack(addr, transfer_id, seq)
+            self.receiver_send_ack(addr, transfer_id, seq)  # Fixed: was self.send_ack
 
 
     def handle_end_packet(self, addr, transfer_id):
@@ -187,8 +184,18 @@ class UDPHandler:
 
         if key in self.recv_files:
             self.recv_files[key].close()
+
+            # Rename from temp .bin to final filename
+            temp_path = Path(f"recv_{transfer_id}.bin")
+            filename = "FAHHH"
+            final_path = Path("C:/Users/seanw/Downloads") / filename
+            final_path.parent.mkdir(exist_ok=True)
+            temp_path.rename(final_path)
+
             del self.recv_files[key]
             del self.recv_buffers[key]
             del self.recv_expected[key]
-            print(f"[UDP] Transfer {transfer_id} complete")
-                
+            #self.recv_filenames.pop(key, None)
+
+            print(f"[UDP] Transfer {transfer_id} complete -> {final_path}")
+            self.client.interface.on_file_received(str(final_path))
