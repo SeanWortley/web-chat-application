@@ -117,7 +117,7 @@ class Client:
             case "MEDIA_OFFER":
 
                 input_data["data"]["from"] = self.loggedInAs
-                input_data["data"]["transfer_id"] = f"transferID_{int(time.time())}"
+                input_data["data"]["transfer_id"] = {1}
                 input_data["data"]["sender_port"] = self.udp_start()
                 self.protocol.media_offer(self.connection,
                             input_data["data"]["chat_id"],

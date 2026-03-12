@@ -201,7 +201,7 @@ class Protocol:
     
         filename = file_path.name
         filesize = file_path.stat().st_size
-        transfer_id = f"transferID_{int(time.time())}"
+        transfer_id = 1
 
         connection.sendJson({
             "message_name": "MEDIA_OFFER",
