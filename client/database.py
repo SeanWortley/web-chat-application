@@ -1,5 +1,6 @@
 import sqlite3
 from threading import local
+from pathlib import Path
 
 """
 DO NOT ACCESS FUNCTIONS OR VARIABLES 
@@ -12,7 +13,9 @@ class Database:
     
 
     def __init__(self, username):
-        self.DB_PATH = f"client/{username}.db"
+        runtime_db_dir = Path(__file__).resolve().parent / "runtime" / "db"
+        runtime_db_dir.mkdir(parents=True, exist_ok=True)
+        self.DB_PATH = str(runtime_db_dir / f"{username}.db")
         self.local = local()
         self.initialise()
 

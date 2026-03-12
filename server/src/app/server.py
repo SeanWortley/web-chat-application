@@ -1,15 +1,14 @@
-from ast import main
 from socket import *
-from connection import Connection
-from protocol import Protocol
-from database import Database
 import argparse
 import threading
 import sys
 
+from ..transport.connection import Connection
+from ..protocol.protocol import Protocol
+from ..storage.database import Database
 
 
-class Server:    
+class Server:
     def __init__(self, host, port, verbose):
         self.verbose = verbose
         self.socket = socket(AF_INET, SOCK_STREAM)
@@ -19,8 +18,7 @@ class Server:
         self.database = Database()
         self.socket.listen()
         self.socket.settimeout(1.0)
-        #self.groups = {}  # stores groups: {group_name: [username1, username2]}
-        self.connections = []  # track all active connections
+        self.connections = []
         self.active_users = []
         self.running = True
 
@@ -28,7 +26,7 @@ class Server:
         while self.running:
             try:
                 clientSocket, address = self.socket.accept()
-                clientSocket.settimeout(None)  
+                clientSocket.settimeout(None)
                 connection = Connection(clientSocket, self)
                 self.connections.append(connection)
                 connection.start()
@@ -42,19 +40,19 @@ class Server:
             if conn.loggedInAs == username:
                 return conn
         return None
-    
+
     def log(self, message):
         if self.verbose:
             print(f"GENERAL: {message}")
-    
+
     def log_incoming(self, message):
         if self.verbose:
             print(f"INCOMING: {message}")
-        
+
     def log_outgoing(self, message):
         if self.verbose:
             print(f"OUTGOING: {message}")
-    
+
     def quit(self):
         print("Shutting down")
         self.running = False
@@ -76,8 +74,8 @@ class Server:
             except EOFError:
                 break
 
+
 def main():
-    # Parse in arguements
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", type=str, default="127.0.0.1")
     parser.add_argument("--port", type=int, default=12000)
@@ -86,7 +84,7 @@ def main():
     print(args.host, args.port, args.verbose)
 
     server = Server(args.host, args.port, args.verbose)
-    
+
     quitting_thread = threading.Thread(target=server.listen_for_quit, daemon=True)
     quitting_thread.start()
 

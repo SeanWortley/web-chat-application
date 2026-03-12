@@ -128,10 +128,13 @@ class P2PProtocol:
         key = (addr, transfer_id)
 
         if key not in self.recv_expected:
+            incoming_dir = Path(__file__).resolve().parents[1] / "runtime" / "incoming"
+            incoming_dir.mkdir(parents=True, exist_ok=True)
+            temp_file_path = incoming_dir / f"recv_{transfer_id}.bin"
 
             self.recv_expected[key] = 0
             self.recv_buffers[key] = {}
-            self.recv_files[key] = open(f"recv_{transfer_id}.bin", "wb")
+            self.recv_files[key] = open(temp_file_path, "wb")
 
         expected = self.recv_expected[key]
         buffer = self.recv_buffers[key]
@@ -165,7 +168,7 @@ class P2PProtocol:
 
             self.recv_files[key].close()
 
-            temp_path = Path(f"recv_{transfer_id}.bin")
+            temp_path = Path(__file__).resolve().parents[1] / "runtime" / "incoming" / f"recv_{transfer_id}.bin"
 
             filename = self.recv_filenames.pop(transfer_id, f"recv_{transfer_id}.bin")
 
