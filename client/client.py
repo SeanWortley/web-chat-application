@@ -61,10 +61,12 @@ class Client:
     
     def queue_user_input(self, input_data):
         """Queue user input for safe processing"""
+        print(input_data)
         self.command_queue.put(input_data)
 
     def process_commands(self):
         """Process queued commands in the connection thread"""
+
         while self.running:
             try:
                 # Wait for a command with timeout
@@ -134,11 +136,15 @@ class Client:
                             input_data["data"]["receiver_port"])
                 
             case "SETUP_P2P":
+                receiver_port = input_data["data"]["receiver_port"]
+                # If it's a string, convert it:
+                if isinstance(receiver_port, str):
+                    receiver_port = int(receiver_port)
                 self.udp_handler.initiate_udp_transfer(
                     input_data["data"]["transfer_id"],
                     input_data["data"]["filepath"],
                     input_data["data"]["receiver_ip"],
-                    input_data["data"]["receiver_port"]
+                    receiver_port
                 )
 
             case "close_connection":
@@ -178,6 +184,17 @@ def main():
     client.start()
     # Run GUI in main thread
     interface.start()
+
+    # KEEP MAIN THREAD ALIVE
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("\nShutting down...")
+        client.running = False
+        if hasattr(client, 'udp_handler') and client.udp_handler:
+            client.udp_handler.stop()
+        sys.exit(0)
 
 if __name__ == "__main__":
     main()
