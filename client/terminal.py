@@ -210,9 +210,9 @@ class Terminal:
             if text.startswith("/mdt"):
                 parts = text.split(maxsplit=1)
                 if len(parts) == 1:
-                    filepath = input("Enter filepath:\n> ").strip('\'"')
+                    filepath = input("Enter filepath:\n> ").strip('')
                 else:
-                    filepath = parts[1].strip('\'"')
+                    filepath = parts[1].strip('')
                 self.send_media_offer(recipient, filepath, chat_type="private")
             
             elif text.startswith("/accept"):
@@ -310,9 +310,9 @@ class Terminal:
             if text.startswith("/mdt"):
                 parts = text.split(maxsplit=1)
                 if len(parts) == 1:
-                    filepath = input("Enter filepath:\n> ").strip('\'"')
+                    filepath = input("Enter filepath:\n> ").strip('')
                 else:
-                    filepath = parts[1].strip('\'"')
+                    filepath = parts[1].strip('')
                     self.send_media_offer(group, filepath, chat_type="group")
             
             elif text.startswith("/accept"):
@@ -472,6 +472,7 @@ class Terminal:
 
     def send_media_offer(self, chat_id, filepath, chat_type):
 
+        filepath = filepath.strip().strip('"\'') 
         if not os.path.exists(filepath):
             print(f"File not found: {filepath}")
             return
