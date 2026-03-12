@@ -178,7 +178,7 @@ class Client:
         elif event == 'complete':
             self.interface.transfer_complete(transfer_id, data)
             self.udp_handler = None  # Clear reference
-            
+
     def accept_transfer(self, transfer_id):
         if transfer_id not in self.interface.pending_incoming:
             self.interface.display(f"No pending offer with ID {transfer_id}")
@@ -187,11 +187,11 @@ class Client:
         offer = self.interface.pending_incoming[transfer_id]
         del self.interface.pending_incoming[transfer_id]
 
-        self.send({
+        self.queue_user_input({
             "message_name": "MEDIA_RESPONSE",
             "data": {
                 "chat_id": offer['sender'],
-                "chat_type": "private",
+                "chat_type": offer['chat_type'],
                 "status": "ACCEPT",
                 "transfer_id": transfer_id,
                 "filename": offer['filename']
@@ -206,14 +206,13 @@ class Client:
         offer = self.interface.pending_incoming[transfer_id]
         del self.interface.pending_incoming[transfer_id]
 
-        self.send({
+        self.queue_user_input({
             "message_name": "MEDIA_RESPONSE",
             "data": {
                 "chat_id": offer['sender'],
-                "chat_type": "private",
+                "chat_type": offer['chat_type'],
                 "status": "REJECT",
-                "transfer_id": transfer_id,
-                "receiver_port": None
+                "transfer_id": transfer_id
             }
         })
 
