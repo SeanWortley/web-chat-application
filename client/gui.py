@@ -1,4 +1,5 @@
 # client/gui.py
+import os
 from pydoc import text
 from pydoc import text
 import tkinter as tk
@@ -26,6 +27,9 @@ class GUI:
         # Unread messages storage
         self.unread_messages = {}
         self.chat_windows = {}  # Track open chat windows
+
+        self.pending_incoming = {}
+        self.pending_outgoing = {}
         
     def start(self):
         # After prompting  it in the terminal, this will start the GUI and show the login screen.  
@@ -184,53 +188,80 @@ class GUI:
         if not hasattr(self, 'database') or not self.database:
             print("No database")
             return
-        logs = self.database.get_private_chat_history(chat_id)
-        #print(f"logs: {logs}")
-        if not logs:
-            return
-        
+
         window = self.chat_windows.get(chat_id)
-        for child in window.winfo_children():
-            print(f"child: {type(child)}, {child}")
         if not window:
+            return
+
+        chat_display = None
+        for child in window.winfo_children():
+            if isinstance(child, scrolledtext.ScrolledText):
+                chat_display = child
+                break
+            if isinstance(child, tk.Frame):
+                for grandchild in child.winfo_children():
+                    if isinstance(grandchild, scrolledtext.ScrolledText):
+                        chat_display = grandchild
+                        break
+                if chat_display:
+                    break
+
+        if not chat_display:
+            return
+
+        logs = self.database.get_chat_history(chat_id, "private")
+
+        chat_display.delete("1.0", tk.END)
+        if not logs:
             return
 
         for message in logs:
             from_user = message.get("from_user")
             msg_text = message.get("msg_text")
             sender = "You" if from_user == self.loggedInAs else from_user
+            chat_display.insert(tk.END, f"{sender}: {msg_text}\n")
 
-            for child in window.winfo_children():
-                for grandchild in child.winfo_children():
-                    if isinstance(grandchild, scrolledtext.ScrolledText):
-                        grandchild.insert(tk.END, f"{sender}: {msg_text}\n")
-                        grandchild.see(tk.END)
-                        break
+        chat_display.see(tk.END)
 
     def load_group_logs(self, group_id):
         print(f"load_group_logs: group_id={group_id}")
         if not hasattr(self, 'database') or not self.database:
             print("No database")
             return
-        logs = self.database.get_group_chat_history(group_id)
-        if not logs:
-            return
-        
+
         window = self.chat_windows.get(group_id)
         if not window:
+            return
+
+        chat_display = None
+        for child in window.winfo_children():
+            if isinstance(child, scrolledtext.ScrolledText):
+                chat_display = child
+                break
+            if isinstance(child, tk.Frame):
+                for grandchild in child.winfo_children():
+                    if isinstance(grandchild, scrolledtext.ScrolledText):
+                        chat_display = grandchild
+                        break
+                if chat_display:
+                    break
+
+        if not chat_display:
+            return
+
+        logs = self.database.get_chat_history(group_id, "group")
+
+        chat_display.delete("1.0", tk.END)
+        if not logs:
             return
 
         for message in logs:
             from_user = message.get("from_user")
             msg_text = message.get("msg_text")
             sender = "You" if from_user == self.loggedInAs else from_user
+            chat_display.insert(tk.END, f"{sender}: {msg_text}\n")
 
-            for child in window.winfo_children():
-                for grandchild in child.winfo_children():
-                    if isinstance(grandchild, scrolledtext.ScrolledText):
-                        grandchild.insert(tk.END, f"{sender}: {msg_text}\n")
-                        grandchild.see(tk.END)
-                        break
+        chat_display.see(tk.END)
     
     def start_group_chat(self):
         # Similar to the start_private_chat method, this will be called when the user clicks the "Group Chat" button. It will prompt the user to enter the name of the group they want to chat in and then open a new chat window for that group conversation.
@@ -282,6 +313,41 @@ class GUI:
         send_btn = tk.Button(input_frame, text="Send", 
                             command=lambda: self.send_chat_message(entry, chat_id, chat_type, chat_display))
         send_btn.pack(side=tk.RIGHT, padx=5)
+
+        def transfer_file():
+            if not self.on_user_input:
+                messagebox.showerror("Error", "Not connected")
+                return
+            filepath = simpledialog.askstring("Send File", "Enter filepath:")
+            if not filepath:
+                return
+            filepath = filepath.strip().strip('"\'')
+            if not os.path.exists(filepath):
+                messagebox.showerror("Error", f"File not found: {filepath}")
+                return
+            import uuid
+            transfer_id = uuid.uuid4().int & 0xFFFFFFFF
+            self.pending_outgoing[transfer_id] = {
+                'recipient': chat_id,
+                'filepath': filepath,
+                'filename': os.path.basename(filepath),
+                'filesize': os.path.getsize(filepath),
+                'chat_type': chat_type,
+                'status': 'pending'
+            }
+            self.on_user_input({
+                "message_name": "MEDIA_OFFER",
+                "data": {
+                    "chat_id": chat_id,
+                    "transfer_id": transfer_id,
+                    "filepath": filepath,
+                    "chat_type": chat_type,
+                }
+            })
+            
+        file_btn = tk.Button(input_frame, text="Send File",
+                command=transfer_file)
+        file_btn.pack(side=tk.RIGHT, padx=5)
         
         # When the user closes the chat window, we romove it from the chat_windows dictionary.
         def on_close():
@@ -293,6 +359,7 @@ class GUI:
         
         window.protocol("WM_DELETE_WINDOW", on_close)
     
+
     def send_chat_message(self, entry, chat_id, chat_type, display):
     # Triggered when the user clicks the send button or presses Enter in the chat input field.
         text = entry.get()
@@ -499,3 +566,95 @@ class GUI:
             messagebox.showinfo("Server", "Server has shut down."),
             self.root.destroy()
         ])
+
+    def handle_incoming_offer(self, message):
+        data = message.get("data", {})
+        transfer_id = data.get("transfer_id")
+        if not transfer_id:
+            return
+
+        self.pending_incoming[transfer_id] = {
+            'sender': data.get('from'),
+            'filename': data.get('filename'),
+            'filesize': data.get('filesize'),
+            'chat_type': data.get('chat_type'),
+            'chat_id': data.get('chat_id')
+        }
+
+        sender = data.get('from')
+        filename = data.get('filename')
+        filesize = data.get('filesize')
+
+        def show_offer():
+            accepted = messagebox.askyesno(
+                "Incoming File Transfer",
+                f"{sender} wants to send you:\n\n"
+                f"File: {filename}\n"
+                f"Size: {filesize} bytes\n\n"
+                f"Transfer ID: {transfer_id}\n\n"
+                f"Accept?"
+            )
+            offer = self.pending_incoming.pop(transfer_id, None)
+            if not offer:
+                return
+            if accepted:
+                self.on_user_input({
+                    "message_name": "MEDIA_RESPONSE",
+                    "data": {
+                        "chat_id": offer['chat_id'],
+                        "chat_type": offer['chat_type'],
+                        "status": "ACCEPT",
+                        "transfer_id": transfer_id,
+                        "filename": offer['filename']
+                    }
+                })
+                self.display(f"You accepted transfer {transfer_id} from {sender}.")
+            else:
+                self.on_user_input({
+                    "message_name": "MEDIA_RESPONSE",
+                    "data": {
+                        "chat_id": offer['chat_id'],
+                        "chat_type": offer['chat_type'],
+                        "status": "REJECT",
+                        "transfer_id": transfer_id
+                    }
+                })
+                self.display(f"You rejected transfer {transfer_id} from {sender}.")
+
+        self.root.after(0, show_offer)
+
+    def handle_incoming_response(self, message):
+        data = message.get("data", {})
+        transfer_id = data.get("transfer_id")
+        status = data.get("status")
+        receiver_port = data.get("receiver_port")
+        receiver_ip = data.get("receiver_ip")
+        responder = data.get("from")
+
+        if transfer_id not in self.pending_outgoing:
+            return
+
+        offer = self.pending_outgoing[transfer_id]
+
+        if 'accepted' not in offer:
+            offer['accepted'] = []
+        if 'rejected' not in offer:
+            offer['rejected'] = []
+
+        if status == "ACCEPT":
+            offer['accepted'].append({
+                'user': responder,
+                'ip': receiver_ip,
+                'port': receiver_port
+            })
+            self.root.after(0, lambda: self.display(f"{responder} accepted your file transfer."))
+
+        elif status == "REJECT":
+            offer['rejected'].append(responder)
+            self.root.after(0, lambda: self.display(f"{responder} rejected your file transfer."))
+
+    def on_file_received(self, filepath):
+        self.root.after(0, lambda: messagebox.showinfo(
+            "Transfer Complete",
+            f"File received!\n\nSaved to:\n{filepath}"
+        ))

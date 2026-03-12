@@ -130,81 +130,6 @@ class Protocol:
                 "welcome_message": welcome_message}
         })
 
-    # Removed Sande's handling group creation, join, leave
-    """
-        def handle_CREATE_GROUP(self, connection, message):
-        group_name = message["data"]["group_name"]
-        members = message["data"]["members"]  
-        # Prevent duplicate group names
-        if group_name in self.server.groups:
-            self.CREATE_GROUP_FAIL(connection, "A group with that name already exists!")
-            return
-
-       # Validate members exist
-        valid_members = [m for m in members if m in self.server.userList]
-
-        if connection.loggedInAs not in valid_members:
-            valid_members.append(connection.loggedInAs)
-
-        self.server.groups[group_name] = valid_members
-
-        # Notify all members currently online
-        for username in valid_members:
-            member_conn = self.server.get_connection_by_username(username)
-            if member_conn:
-                member_conn.sendJson({
-                   "message_name": "CREATE_GROUP_ACK",
-                   "data": {
-                      "group_name": group_name,
-                      "members": valid_members,
-                      "message": f"You have been added to group '{group_name}'!"
-                }
-            })
-
-            self.server.log(f"Group '{group_name}' created with members: {valid_members}")
-    
-    def CREATE_GROUP_FAIL(self, connection, error_message):
-        connection.sendJson({
-        "message_name": "CREATE_GROUP_FAIL",
-        "data": {"error_message": error_message}
-    })
-
-    def handle_JOIN_GROUP(self, connection, message):
-        group_name = message["data"]["group_name"]
-        if group_name not in self.server.groups:
-            connection.sendJson({
-                "message_name": "JOIN_GROUP_FAIL",
-                "data": {"error": "Group does not exist."}
-            })
-            return
-
-        if connection.loggedInAs not in self.server.groups[group_name]:
-            self.server.groups[group_name].append(connection.loggedInAs)
-
-        connection.sendJson({
-            "message_name": "JOIN_GROUP_ACK",
-            "data": {"group_name": group_name}
-            })
-
-    def handle_LEAVE_GROUP(self, connection, message):
-        group_name = message["data"]["group_name"]
-        if group_name in self.server.groups and connection.loggedInAs in self.server.groups[group_name]:
-            self.server.groups[group_name].remove(connection.loggedInAs)
-            connection.sendJson({
-                "message_name": "LEAVE_GROUP_ACK",
-                "data": {"group_name": group_name}
-            })
-
-    def handle_CREATE_GROUP_ACK(self, message):
-        group_name = message["data"]["group_name"]
-        members = message["data"]["members"]
-
-        self.terminal.display(f"Group '{group_name}' created successfully!")
-        self.terminal.display(f"Members: {', '.join(members)}")
-
-        self.terminal.resume()
-    """
-
     def CREATE_ACCOUNT_FAIL(self, connection):
         error_message = "A user with that name already exists!"
 
@@ -269,6 +194,7 @@ class Protocol:
             recipient = context["chat_id"]
             if recipient == context.get("from_user"):
                 self.MSG_NAK(connection, context["chat_id"], "You can't send a message to yourself")
+                return
             if not self.server.database.get_user(context["chat_id"]):
                 self.MSG_NAK(connection, context.get("chat_id"), "Recipient doesn't exist")
                 return
@@ -345,8 +271,6 @@ class Protocol:
                     ctx["sender_port"]
                 )
             else:
-                # store on pending offers
-                print("Have to notify that we stored offline offer when the receiver is oflline for later delivery")
                 pass
 
         elif message_name == "MEDIA_RESPONSE":
@@ -514,6 +438,9 @@ class Protocol:
 
     def forward_MEDIA_OFFER(self, recipient_conn, from_user, chat_id, chat_type, transfer_id, filename, filesize, sender_port):
             media_offer_sender_conn = self.get_user_connection(from_user)
+            if not media_offer_sender_conn:
+                self.server.log(f"MEDIA_OFFER skipped: sender connection not found for '{from_user}'")
+                return
             md_offer_sender_ip = media_offer_sender_conn.socket.getpeername()[0]
             recipient_conn.sendJson({
                 "message_name": "MEDIA_OFFER",
@@ -531,6 +458,9 @@ class Protocol:
 
     def forward_MEDIA_RESPONSE(self, recipient_conn, to_user, from_user, status, transfer_id, receiver_port):
         media_response_sender_conn = self.get_user_connection(from_user)
+        if not media_response_sender_conn:
+            self.server.log(f"MEDIA_RESPONSE skipped: sender connection not found for '{from_user}'")
+            return
         md_response_sender_ip = media_response_sender_conn.socket.getpeername()[0]
         recipient_conn.sendJson({
             "message_name": "MEDIA_RESPONSE",

@@ -5,7 +5,7 @@ import uuid
 import json
 from pathlib import Path
 
-class Protocol:
+class CSProtocol:
     def __init__(self, client):
         self.client = client
         self.handlers = {
@@ -190,18 +190,14 @@ class Protocol:
         connection.sendJson(outgoing)
 
         
-    def media_offer(self, connection, chat_id, filepath, chat_type, sender_port):
+    def MEDIA_OFFER(self, connection, chat_id, transfer_id, filepath, chat_type, sender_port):
 
-        # Validate path
-        file_path = Path(filepath)
-        if not file_path.exists():
-            print("Checking:", file_path.resolve())
-            print(f"File not found: {filepath}")
-            return
     
+        file_path = Path(filepath)
         filename = file_path.name
         filesize = file_path.stat().st_size
-        transfer_id = f"transferID_{int(time.time())}"
+
+        self.client.pending_transfers[transfer_id] = filepath
 
         connection.sendJson({
             "message_name": "MEDIA_OFFER",
@@ -209,19 +205,17 @@ class Protocol:
                 "from": self.client.loggedInAs,
                 "chat_id": chat_id,
                 "chat_type": chat_type,
-                "transfer_id": transfer_id,
                 "filename": filename,
                 "filesize": filesize,
-                "sender_port": sender_port
-
+                "sender_port": sender_port,
+                "transfer_id": transfer_id
             } 
         })
-
 
     def handle_incoming_media_offer(self, connection, message):
         self.client.interface.handle_incoming_offer(message)
     
-    def media_response(self, connection, chat_id, chat_type, status, transfer_id, receiver_port):
+    def MEDIA_RESPONSE(self, connection, chat_id, chat_type, status, transfer_id, receiver_port):
         connection.sendJson({
         "message_name": "MEDIA_RESPONSE",
         "data": {
@@ -235,7 +229,33 @@ class Protocol:
     })
     
     def handle_incoming_media_response(self, connection, message):
+
+        data = message["data"]
+
+        if data["status"].lower() != "accept":
+            self.client.interface.handle_incoming_response(message)
+            return
+
+        transfer_id = data["transfer_id"]
+        receiver_ip = data["receiver_ip"]
+        receiver_port = data["receiver_port"]
+
+        filepath = self.client.pending_transfers.get(transfer_id)
+
+        if not filepath:
+            print(f"Unknown transfer id {transfer_id}")
+            return
+
+        # Start UDP transfer
+        self.client.p2p_protocol.initiate_udp_transfer(
+            transfer_id,
+            filepath,
+            receiver_ip,
+            receiver_port
+        )
+
         self.client.interface.handle_incoming_response(message)
+
     
     def handle_MSG(self, connection, message):
         #print("Ekse, you have a new message coming through")

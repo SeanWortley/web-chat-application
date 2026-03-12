@@ -4,7 +4,7 @@ from threading import Thread
 import socket
 import traceback
 
-class Connection:
+class TCPConnection:
     def __init__(self, socket, client):
         self.client = client
         self.socket = socket
@@ -47,10 +47,10 @@ class Connection:
                         else:
                             message["data"]["payload"] = body  # raw bytes for media
 
-                self.client.protocol.handleIncoming(self, message)
+                self.client.cs_protocol.handleIncoming(self, message)
 
         except Exception as e:
-            print(f"Connection error: {e}")
+            print(f"TCPConnection error: {e}")
         finally:
             self.close()
 
@@ -80,4 +80,3 @@ class Connection:
                 self.socket.close()
             except Exception as e:
                 pass
-            

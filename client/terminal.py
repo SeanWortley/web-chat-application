@@ -5,6 +5,8 @@ import queue
 import os
 import time
 import sys
+import uuid
+from pathlib import Path
 
 class Terminal:
 
@@ -14,7 +16,6 @@ class Terminal:
             "/login": self.login,
             "/register": self.register,
             "/logout": self.logout,
-            "/msg": self.send_message,
             "/current": self.print_current
         }
         self.on_user_input = None
@@ -40,16 +41,8 @@ class Terminal:
             text = input("> ").strip()
 
             if self.running: # This is to stop the "Invalid command" prompt after pressing enter to exit :)
-                if text.startswith("/msg "):
-                    parts = text[5:].split(maxsplit=1)
-                    if len(parts) == 2:
-                        recipient, message = parts
-                        self.wait_event.clear()
-                        self.send_message(recipient, message)
-                        self.wait_event.wait()
-                    else:
-                        print("Usage: /msg username message")
-                elif text == "1": #Private chat
+
+                if text == "1": #Private chat
                     self.start_private_chat()
                     self.current_chat = None
 
@@ -79,6 +72,23 @@ class Terminal:
                     self.wait_event.clear()
                     command()
                     self.wait_event.wait()
+
+                elif text.startswith("/accept"):
+                    parts = text.split()
+                    if len(parts) == 2:
+                        transfer_id = int(parts[1])
+                        self.accept_transfer(transfer_id)
+                    else:
+                        print("Usage: /accept <transfer_id>")
+
+                elif text.startswith("/reject"):
+                    parts = text.split()
+                    if len(parts) == 2:
+                        transfer_id = int(parts[1])
+                        self.reject_transfer(transfer_id)
+                    else:
+                        print("Usage: /reject <transfer_id>")
+
                 else:
                     print("Invalid command. Try /help")
 
@@ -171,7 +181,7 @@ class Terminal:
             print(f'\n{from_user}: {data.get("payload")}\n>> ', end="")
 
     def load_private_logs(self, chat_id):
-        logs = self.database.get_private_chat_history(chat_id) #Dictionary
+        logs = self.database.get_chat_history(chat_id, "private")
         for message in logs:
             from_user = message.get("from_user")
             msg_text = message.get("msg_text")
@@ -180,7 +190,7 @@ class Terminal:
         print("-------------------------------------")
         
     def load_group_logs(self, chat_id):
-        logs = self.database.get_group_chat_history(chat_id)
+        logs = self.database.get_chat_history(chat_id, "group")
         for message in logs:
             from_user = message.get("from_user")
             msg_text = message.get("msg_text")
@@ -207,15 +217,15 @@ class Terminal:
             if text.startswith("/mdt"):
                 parts = text.split(maxsplit=1)
                 if len(parts) == 1:
-                    filepath = input("Enter filepath:\n> ").strip()
+                    filepath = input("Enter filepath:\n> ").strip('')
                 else:
-                    filepath = parts[1].strip()
+                    filepath = parts[1].strip('')
                 self.send_media_offer(recipient, filepath, chat_type="private")
             
             elif text.startswith("/accept"):
                 parts = text.split()
                 if len(parts) == 2:
-                    transfer_id = parts[1]
+                    transfer_id = int(parts[1])
                     self.accept_transfer(transfer_id)
                 else:
                     print("Usage: /accept <transfer_id>")
@@ -223,7 +233,7 @@ class Terminal:
             elif text.startswith("/reject"):
                 parts = text.split()
                 if len(parts) == 2:
-                    transfer_id = parts[1]
+                    transfer_id = int(parts[1])
                     self.reject_transfer(transfer_id)
                 else:
                     print("Usage: /reject <transfer_id>")
@@ -249,22 +259,22 @@ class Terminal:
             return
         
         offer = self.pending_incoming[transfer_id]
-        
+
         # Send MEDIA_RESPONSE with status ACCEPT
         self.on_user_input({
             "message_name": "MEDIA_RESPONSE",
             "data": {
-                "chat_id": offer['sender'],          # who sent the offer
-                "chat_type": "private",
+                "chat_id": offer['chat_id'],
+                "chat_type": offer['chat_type'],
                 "status": "ACCEPT",
                 "transfer_id": transfer_id,
-                #"receiver_port": self.client.udp_port  # you'll need to get this
+                "filename": offer['filename']
             }
         })
         
         # Remove from pending
         del self.pending_incoming[transfer_id]
-        print(f" Accepted transfer {transfer_id}")
+        print(f"You accepted transfer {transfer_id}.")
 
 
     def reject_transfer(self, transfer_id):
@@ -277,16 +287,15 @@ class Terminal:
         self.on_user_input({
             "message_name": "MEDIA_RESPONSE",
             "data": {
-                "chat_id": offer['sender'],
-                "chat_type": "private",
+                "chat_id": offer['chat_id'],
+                "chat_type": offer['chat_type'],
                 "status": "REJECT",
-                "transfer_id": transfer_id,
-                "receiver_port": None  # not needed
+                "transfer_id": transfer_id
             }
         })
         
         del self.pending_incoming[transfer_id]
-        print(f" Rejected transfer {transfer_id}") 
+        print(f"You rejected transfer {transfer_id}.") 
 
     def start_group_chat(self):
         group = input("Which chat room would you like to enter?\n> ")
@@ -303,18 +312,19 @@ class Terminal:
         self.process_unread_in_current_chat()
         text = input(">> ")
         while text != "/exit" and self.running:
+
             if text.startswith("/mdt"):
                 parts = text.split(maxsplit=1)
                 if len(parts) == 1:
-                    filepath = input("Enter filepath:\n> ").strip()
+                    filepath = input("Enter filepath:\n> ").strip('')
                 else:
-                    filepath = parts[1].strip()
-                self.send_media_offer(group, filepath, chat_type="group")
+                    filepath = parts[1].strip('')
+                    self.send_media_offer(group, filepath, chat_type="group")
             
             elif text.startswith("/accept"):
                 parts = text.split()
                 if len(parts) == 2:
-                    transfer_id = parts[1]
+                    transfer_id = int(parts[1])
                     self.accept_transfer(transfer_id)
                 else:
                     print("Usage: /accept <transfer_id>")
@@ -322,7 +332,7 @@ class Terminal:
             elif text.startswith("/reject"):
                 parts = text.split()
                 if len(parts) == 2:
-                    transfer_id = parts[1]
+                    transfer_id = int(parts[1])
                     self.reject_transfer(transfer_id)
                 else:
                     print("Usage: /reject <transfer_id>")
@@ -468,7 +478,11 @@ class Terminal:
 
     def send_media_offer(self, chat_id, filepath, chat_type):
 
-        transfer_id = f"transferID_{int(time.time())}"  # generate unique ID
+        filepath = filepath.strip().strip('"\'') 
+        if not os.path.exists(filepath):
+            print(f"File not found: {filepath}")
+            return
+        transfer_id = uuid.uuid4().int & 0xFFFFFFFF
         self.pending_outgoing[transfer_id] = {
             'recipient': chat_id,
             'filepath': filepath,
@@ -481,6 +495,7 @@ class Terminal:
             "message_name": "MEDIA_OFFER",
             "data": {
                     "chat_id": chat_id,
+                    "transfer_id": transfer_id,
                     "filepath": filepath,
                     "chat_type": chat_type,
             }  
@@ -511,7 +526,7 @@ class Terminal:
             offer['rejected'] = []
 
         if status == "ACCEPT":
-            print(f" {responder} accepted the file transfer!")
+            print(f"{responder} accepted your file transfer.")
             # Store acceptor's connection details for later UDP transfer
             offer['accepted'].append({
                 'user': responder,
@@ -522,7 +537,7 @@ class Terminal:
             # if len(offer['accepted']) == 1 and offer['chat_type'] == 'private':
             #     self.initiate_udp_to(offer['accepted'][0])
         elif status == "REJECT":
-            print(f"{responder} rejected the file transfer")
+            print(f"{responder} rejected your file transfer.")
             offer['rejected'].append(responder)
         else:
             print(f"Unknown response status: {status}")
@@ -589,3 +604,6 @@ class Terminal:
     def process_shutdown(self):
         print("\nServer has shut down. Press Enter to exit.")
         self.quit()
+
+    def on_file_received(self, filepath):
+        print(f"[UDP] Transfer complete -> {filepath}")

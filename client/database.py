@@ -108,21 +108,30 @@ class Database:
             return False
 
     # THIS IS FOR INTERFACE IMPLEMENTATION
-    def get_private_chat_history(self, chat_id):
-        chat_history = self.get_connection().execute("""
-            SELECT * FROM private_messages 
-            WHERE chat_id = ?
-            ORDER BY timestamp ASC         
-         """, (chat_id,)).fetchall()
+    def get_chat_history(self, chat_id, chat_type):
+        if chat_type == "private":
+            command = """
+                SELECT * FROM private_messages
+                WHERE chat_id = ?
+                ORDER BY CAST(timestamp AS REAL) ASC, msg_id ASC
+            """
+        elif chat_type == "group":
+            command = """
+                SELECT * FROM group_messages
+                WHERE chat_id = ?
+                ORDER BY CAST(timestamp AS REAL) ASC, msg_id ASC
+            """
+        else:
+            return []
+
+        chat_history = self.get_connection().execute(command, (chat_id,)).fetchall()
         return [dict(row) for row in chat_history]
+
+    def get_private_chat_history(self, chat_id):
+        return self.get_chat_history(chat_id, "private")
     
     def get_group_chat_history(self, chat_id):
-        chat_history = self.get_connection().execute("""
-            SELECT * FROM group_messages
-            WHERE chat_id = ?
-            ORDER BY timestamp ASC
-        """, (chat_id,)).fetchall()
-        return [dict(row) for row in chat_history]
+        return self.get_chat_history(chat_id, "group")
     
     # Call this method when developing the gui
     # Returns a list of dictionaries, each representing a chat
