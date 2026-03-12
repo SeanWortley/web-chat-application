@@ -195,6 +195,7 @@ class CSProtocol:
     
         file_path = Path(filepath)
         filename = file_path.name
+        transfer_id = str(uuid.uuid4())
         filesize = file_path.stat().st_size
 
         connection.sendJson({
@@ -205,7 +206,8 @@ class CSProtocol:
                 "chat_type": chat_type,
                 "filename": filename,
                 "filesize": filesize,
-                "sender_port": sender_port
+                "sender_port": sender_port,
+                "transfer_id": transfer_id
             } 
         })
 

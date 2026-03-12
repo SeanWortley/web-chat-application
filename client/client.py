@@ -73,7 +73,7 @@ class Client:
     def _handle_user_input(self, input_data):
         """Actually handle the user input"""
         # Make sure protocol is ready
-        if not hasattr(self, 'protocol') or self.cs_protocol is None:
+        if not hasattr(self, 'cs_protocol') or self.cs_protocol is None:
             print("Protocol not ready, requeueing...")
             self.command_queue.put(input_data)
             time.sleep(0.1)

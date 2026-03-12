@@ -47,7 +47,7 @@ class TCPConnection:
                         else:
                             message["data"]["payload"] = body  # raw bytes for media
 
-                self.client.protocol.handleIncoming(self, message)
+                self.client.cs_protocol.handleIncoming(self, message)
 
         except Exception as e:
             print(f"TCPConnection error: {e}")

@@ -5,6 +5,8 @@ import queue
 import os
 import time
 import sys
+import uuid
+import uuid
 from zipfile import Path
 
 class Terminal:
@@ -208,9 +210,9 @@ class Terminal:
             if text.startswith("/mdt"):
                 parts = text.split(maxsplit=1)
                 if len(parts) == 1:
-                    filepath = input("Enter filepath:\n> ").strip()
+                    filepath = input("Enter filepath:\n> ").strip('\'"')
                 else:
-                    filepath = parts[1].strip()
+                    filepath = parts[1].strip('\'"')
                 self.send_media_offer(recipient, filepath, chat_type="private")
             
             elif text.startswith("/accept"):
@@ -304,18 +306,14 @@ class Terminal:
         self.process_unread_in_current_chat()
         text = input(">> ")
         while text != "/exit" and self.running:
+
             if text.startswith("/mdt"):
                 parts = text.split(maxsplit=1)
                 if len(parts) == 1:
-                    filepath = input("Enter filepath:\n> ").strip()
+                    filepath = input("Enter filepath:\n> ").strip('\'"')
                 else:
-                    filepath = parts[1].strip()
-                    file_path = Path(filepath)
-                if not file_path.exists():
-                    print("Checking:", file_path.resolve())
-                    print(f"File not found: {filepath}")
-                    continue
-                self.send_media_offer(group, filepath, chat_type="group")
+                    filepath = parts[1].strip('\'"')
+                    self.send_media_offer(group, filepath, chat_type="group")
             
             elif text.startswith("/accept"):
                 parts = text.split()
@@ -474,7 +472,10 @@ class Terminal:
 
     def send_media_offer(self, chat_id, filepath, chat_type):
 
-        transfer_id = f"transferID_{int(time.time())}"  # generate unique ID
+        if not os.path.exists(filepath):
+            print(f"File not found: {filepath}")
+            return
+        transfer_id = int(uuid.uuid4())
         self.pending_outgoing[transfer_id] = {
             'recipient': chat_id,
             'filepath': filepath,

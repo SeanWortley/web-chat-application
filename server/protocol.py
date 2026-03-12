@@ -17,8 +17,8 @@ class Protocol:
             "JOIN_GROUP": self.handle_JOIN_GROUP,
             "GROUP_LIST": self.handle_GROUP_LIST,
             "REQUEST_UNSENT_MESSAGES": self.handle_REQUEST_UNSENT_MESSAGES,
-            "MEDIA_OFFER": self.handle_MEDIA_OFFER,
-            "MEDIA_RESPONSE": self.handle_MEDIA_RESPONSE
+            "MEDIA_OFFER": self.handle_MSG,
+            "MEDIA_RESPONSE": self.handle_MSG
         }
     
     def handleIncoming(self, connection, clientMessage):
@@ -270,8 +270,6 @@ class Protocol:
                     ctx["sender_port"]
                 )
             else:
-                # store on pending offers
-                print("Have to notify that we stored offline offer when the receiver is oflline for later delivery")
                 pass
 
         elif message_name == "MEDIA_RESPONSE":
