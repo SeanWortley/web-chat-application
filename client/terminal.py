@@ -213,7 +213,7 @@ class Terminal:
             elif text.startswith("/accept"):
                 parts = text.split()
                 if len(parts) == 2:
-                    transfer_id = parts[1]
+                    transfer_id = int(parts[1])
                     self.accept_transfer(transfer_id)
                 else:
                     print("Usage: /accept <transfer_id>")
@@ -221,7 +221,7 @@ class Terminal:
             elif text.startswith("/reject"):
                 parts = text.split()
                 if len(parts) == 2:
-                    transfer_id = parts[1]
+                    transfer_id = int(parts[1])
                     self.reject_transfer(transfer_id)
                 else:
                     print("Usage: /reject <transfer_id>")
@@ -446,8 +446,8 @@ class Terminal:
 
     def send_media_offer(self, chat_id, filepath, chat_type):
 
-        transfer_id = f"transferID_{int(time.time())}"  # generate unique ID
-        self.pending_outgoing[transfer_id] = {
+        transfer_id = {int(time.time())}  # generate unique ID
+        self.pending_outgoing[1] = {
             'recipient': chat_id,
             'filepath': filepath,
             'chat_type': chat_type,
@@ -497,6 +497,7 @@ class Terminal:
             })
 
             if offer['chat_type'] == 'private':
+                    print("PRIVATE MESSAGE FAHHHHH")
                     if len(offer['accepted']) == 1:
                         acc = offer['accepted'][0]
                         self.on_user_input({
