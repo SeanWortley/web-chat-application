@@ -162,7 +162,7 @@ class P2PProtocol:
 
             filename = self.recv_filenames.pop(transfer_id, f"recv_{transfer_id}.bin")
 
-            final_path = Path("C:/Users/seanw/Downloads") / filename
+            final_path = Path.home() / "Downloads" / filename
             final_path.parent.mkdir(exist_ok=True)
 
             temp_path.replace(final_path)
