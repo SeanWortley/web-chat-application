@@ -34,6 +34,23 @@ class P2PProtocol:
         self.recv_files = {}
         self.recv_filenames = {}
 
+    def _temp_bin_path(self, transfer_id):
+        incoming_dir = Path(__file__).resolve().parents[2] / "runtime" / "incoming"
+        incoming_dir.mkdir(parents=True, exist_ok=True)
+        username = self.client.loggedInAs or "unknown"
+        return incoming_dir / f"recv_{username}_{transfer_id}.bin"
+
+    def clear_stale_temp_files_for_user(self, username):
+        if not username:
+            return
+        incoming_dir = Path(__file__).resolve().parents[2] / "runtime" / "incoming"
+        incoming_dir.mkdir(parents=True, exist_ok=True)
+        for filepath in incoming_dir.glob(f"recv_{username}_*.bin"):
+            try:
+                filepath.unlink()
+            except OSError:
+                pass
+
     def handle_packet(self, data, addr):
 
         packet_type = data[0]
@@ -128,9 +145,7 @@ class P2PProtocol:
         key = (addr, transfer_id)
 
         if key not in self.recv_expected:
-            incoming_dir = Path(__file__).resolve().parents[1] / "runtime" / "incoming"
-            incoming_dir.mkdir(parents=True, exist_ok=True)
-            temp_file_path = incoming_dir / f"recv_{transfer_id}.bin"
+            temp_file_path = self._temp_bin_path(transfer_id)
 
             self.recv_expected[key] = 0
             self.recv_buffers[key] = {}
@@ -168,7 +183,7 @@ class P2PProtocol:
 
             self.recv_files[key].close()
 
-            temp_path = Path(__file__).resolve().parents[1] / "runtime" / "incoming" / f"recv_{transfer_id}.bin"
+            temp_path = self._temp_bin_path(transfer_id)
 
             filename = self.recv_filenames.pop(transfer_id, f"recv_{transfer_id}.bin")
 

@@ -32,5 +32,5 @@ run-client-gui:
 run-client-terminal:
 	$(MAKE) run-client mode=terminal host=$(host) port=$(port)
 
-clean-runtime:
+clean:
 	python3 -c "import shutil, pathlib; [shutil.rmtree(p, ignore_errors=True) for p in [pathlib.Path('client/runtime'), pathlib.Path('server/runtime')]]"

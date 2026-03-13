@@ -13,7 +13,7 @@ class Database:
     
 
     def __init__(self, username):
-        runtime_db_dir = Path(__file__).resolve().parent / "runtime" / "db"
+        runtime_db_dir = Path(__file__).resolve().parents[2] / "runtime" / "db"
         runtime_db_dir.mkdir(parents=True, exist_ok=True)
         self.DB_PATH = str(runtime_db_dir / f"{username}.db")
         self.local = local()

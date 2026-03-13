@@ -42,6 +42,7 @@ class CSProtocol:
         self.client.authenticated = True
         self.client.loggedInAs = message.get("from")
         self.client.interface.loggedInAs = message.get("from")
+        self.client.p2p_protocol.clear_stale_temp_files_for_user(self.client.loggedInAs)
         self.client.assign_db()
 
         self.client.interface.display(message["data"]["welcome_message"])
@@ -59,6 +60,7 @@ class CSProtocol:
         self.client.interface.logged_in = True
         self.client.loggedInAs = message.get("from")
         self.client.interface.loggedInAs = message.get("from")
+        self.client.p2p_protocol.clear_stale_temp_files_for_user(self.client.loggedInAs)
         self.client.assign_db()
         self.client.interface.show_logged_in_menu()
         self.client.interface.resume()

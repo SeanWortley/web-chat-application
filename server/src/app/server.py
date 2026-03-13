@@ -80,9 +80,18 @@ def main():
     parser.add_argument("--host", type=str, default="127.0.0.1")
     parser.add_argument("--port", type=int, default=12000)
     parser.add_argument("--verbose", type=bool, default=True)
+    parser.add_argument("--clean", type=bool, default=False)
     args = parser.parse_args()
     print(args.host, args.port, args.verbose)
-
+    
+    if args.clean:
+        from pathlib import Path
+        runtime_db_dir = Path(__file__).resolve().parents[2] / "runtime" / "db"
+        for db_file in runtime_db_dir.glob("*.db"):
+            try:
+                db_file.unlink()
+            except OSError:
+                pass
     server = Server(args.host, args.port, args.verbose)
 
     quitting_thread = threading.Thread(target=server.listen_for_quit, daemon=True)

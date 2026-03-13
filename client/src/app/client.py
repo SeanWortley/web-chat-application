@@ -197,8 +197,18 @@ def main():
     parser.add_argument("--host", type=str, default="127.0.0.1")
     parser.add_argument("--port", type=int, default=12000)
     parser.add_argument("--terminal", action="store_true", default=False)
+    parser.add_argument("--clean", action="store_true", default=False)
     args = parser.parse_args()
     print(args)
+
+    if args.clean:
+        from pathlib import Path
+        runtime_db_dir = Path(__file__).resolve().parents[2] / "runtime" / "db"
+        for db_file in runtime_db_dir.glob("*.db"):
+            try:
+                db_file.unlink()
+            except OSError:
+                pass
 
     if args.terminal:
         interface = Terminal()
