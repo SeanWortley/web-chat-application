@@ -316,6 +316,7 @@ class Protocol:
     def handle_CREATE_GROUP(self, connection, message):
         if not connection.authenticated:
             self.CREATE_GROUP_ACK(connection, "fail", "You aren't logged in")
+            return
 
         group_name = message["data"]["group_name"]
         username = connection.loggedInAs
