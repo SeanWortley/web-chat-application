@@ -14,8 +14,7 @@ class CSProtocol:
             "GROUP_LIST_ACK": self.handle_GROUP_LIST_ACK,
             "JOIN_GROUP_ACK": self.handle_JOIN_GROUP_ACK,
             "LOGOUT_ACK": self.handle_LOGOUT_ACK,
-            "MSG": self.handle_MSG,  
-            "MSG_DELIVERED": self.handle_MSG_DELIVERED,
+            "MSG": self.handle_MSG,
             "UNSENT_MESSAGES": self.handle_UNSENT_MESSAGES,
             "MEDIA_OFFER": self.handle_incoming_media_offer,
             "MEDIA_RESPONSE": self.handle_incoming_media_response,
@@ -310,13 +309,6 @@ class CSProtocol:
         
         self.client.interface.process_unsent_batch(groups)
 
-
-    def handle_MSG_DELIVERED(self, connection, message):
-    #Show message delivery confirmation
-        data = message["data"]
-        msg_id = data.get("message_id")
-        recipients = data.get("recipients", [])
-        self.client.interface.display(f"✓ Message delivered to: {', '.join(recipients)}")
 
     def handle_MSG_NAK(self, connection, message):
         data = message.get("data")

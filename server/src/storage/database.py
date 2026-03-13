@@ -156,7 +156,3 @@ class Database:
         )
 
         self.get_connection().commit()
-
-    def validate_credentials(self, username, hashed_password):
-        user = self.get_user(username)
-        return (user is not None) and (user["hashed_password"] == hashed_password)
