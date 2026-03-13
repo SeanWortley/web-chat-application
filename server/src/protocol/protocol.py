@@ -382,15 +382,6 @@ class Protocol:
             }
         })
 
-    def LEAVE_GROUP_ACK(self, connection, result, message):
-        connection.sendJson({
-            "message_name": "LEAVE_GROUP_ACK",
-            "data": {
-                "result": result,
-                "message": message
-            }
-        })
-
     def get_user_connection(self, username):
         for conn in self.server.connections:
             if conn.loggedInAs == username and conn.authenticated:

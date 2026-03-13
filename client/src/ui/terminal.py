@@ -456,24 +456,8 @@ class Terminal:
             "message_name": "GROUP_LIST"
         })
 
-    def leave_group(self):
-        group_name = input("Enter the name of the group you'd like to leave:\n> ")
-
-        self.on_user_input({
-            "message_name": "LEAVE_GROUP",
-            "data": {
-                "group_name": group_name
-            }
-        })
-
     def display(self, text): # Will have to be adapted once GUI is added.
         print(text)
-
-    def private_message(self):
-        recipient = input("Enter recipient username:\n> ")
-        message = input("Enter your message:\n> ")
-    
-        self.send_message(recipient, message)
 
     def send_media_offer(self, chat_id, filepath, chat_type):
 

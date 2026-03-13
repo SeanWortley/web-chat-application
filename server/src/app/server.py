@@ -35,12 +35,6 @@ class Server:
             except OSError:
                 break
 
-    def get_connection_by_username(self, username):
-        for conn in self.connections:
-            if conn.loggedInAs == username:
-                return conn
-        return None
-
     def log(self, message):
         if self.verbose:
             print(f"GENERAL: {message}")

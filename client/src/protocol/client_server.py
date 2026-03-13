@@ -154,16 +154,6 @@ class CSProtocol:
             "message_name": "GROUP_LIST"
         })
 
-
-    def LEAVE_GROUP(self, connection, group_name):
-        connection.sendJson({
-            "message_name": "LEAVE_GROUP",
-            "data":
-            {
-                "group_name": group_name
-            }
-        })
-
     def MSG(self, connection, chat_id, chat_type, text):
         msg_id = str(uuid.uuid4())
         timestamp = time.time()
