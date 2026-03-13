@@ -55,7 +55,7 @@ class P2PProtocol:
 
         packet_type = data[0]
         transfer_id = struct.unpack("!I", data[1:5])[0]
-
+        
         if packet_type == self.DATA:
             self.handle_data_packet(data, addr)
 
@@ -141,6 +141,9 @@ class P2PProtocol:
 
         packet_type, transfer_id, seq = struct.unpack("!BII", data[:9])
         chunk = data[9:]
+
+        if seq == 1:
+            self.client.interface.display("File transfer beginning!")
 
         key = (addr, transfer_id)
 
