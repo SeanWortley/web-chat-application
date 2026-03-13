@@ -267,13 +267,6 @@ class CSProtocol:
             
         self.client.interface.process_msg(message, channel)
 
-        """
-        if chat_type == "private":
-            self.client.interface.display(f"\n[PM from {from_user}]: {payload}")
-        elif chat_type == "group":
-            self.client.interface.display(f"\n[{chat_id}] {from_user}: {payload}")
-        """
-
     def REQUEST_UNSENT_MESSAGES(self, connection):
         connection.sendJson({
             "message_name": "REQUEST_UNSENT_MESSAGES",

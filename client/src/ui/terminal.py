@@ -550,22 +550,6 @@ class Terminal:
         if self.chatting_mode:
             print(">> ", end="", flush=True)
 
-    def send_message(self, recipient, message):
-        print(f"send_message called, logged_in={self.logged_in}")
-        if not self.logged_in:
-            print("You must be logged in first")
-            return
-            
-        self.on_user_input({
-            "message_name": "MSG",
-            "data": {
-                "chat_id": recipient,
-                "chat_type": "private",
-                "payload": message
-            }
-        })
-        print(f"Message sent to {recipient}")
-        
     def clear(self):
         os.system('cls' if os.name == 'nt' else 'clear')
 
