@@ -209,6 +209,7 @@ def main():
                 db_file.unlink()
             except OSError:
                 pass
+        return
 
     if args.terminal:
         interface = Terminal()
