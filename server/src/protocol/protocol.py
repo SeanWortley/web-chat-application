@@ -282,10 +282,6 @@ class Protocol:
             }
         print(f"Added offer {transfer_id}")
 
-    def get_and_remove(self, transfer_id):
-        with self.lock:
-            return self.pending_offers.pop(transfer_id, None)
-
     def handle_text_message(self, message_name, ctx):
         target_conn = ctx["target_conn"]
 

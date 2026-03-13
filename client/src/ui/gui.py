@@ -1,7 +1,5 @@
 # client/gui.py
 import os
-from pydoc import text
-from pydoc import text
 import tkinter as tk
 from tkinter import scrolledtext, simpledialog, messagebox
 from hashlib import sha256

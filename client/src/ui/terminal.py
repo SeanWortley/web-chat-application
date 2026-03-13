@@ -1,6 +1,5 @@
 from threading import Thread, Event
 from hashlib import sha256
-from tokenize import group
 import queue
 import os
 import time

@@ -144,16 +144,6 @@ class Client:
         self.database = None
         self.interface.database = None
 
-    def initialise(self):
-        pass
-
-    def _on_udp_event(self, event, transfer_id, data=None):
-        if event == 'progress':
-            self.interface.update_progress(transfer_id, data)
-        elif event == 'complete':
-            self.interface.transfer_complete(transfer_id, data)
-            self.udp_handler = None
-
 
 def main():
     parser = argparse.ArgumentParser()
