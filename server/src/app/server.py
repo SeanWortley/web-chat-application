@@ -96,7 +96,7 @@ def main():
     
     server = Server(args.host, args.port, args.verbose)
 
-    quitting_thread = threading.Thread(target=server.listen_for_quit, daemon=True)
+    quitting_thread = threading.Thread(target=server.listen_for_quit)
     quitting_thread.start()
 
     server.listen()
