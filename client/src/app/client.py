@@ -154,43 +154,6 @@ class Client:
             self.interface.transfer_complete(transfer_id, data)
             self.udp_handler = None
 
-    def accept_transfer(self, transfer_id):
-        if transfer_id not in self.interface.pending_incoming:
-            self.interface.display(f"No pending offer with ID {transfer_id}")
-            return
-
-        offer = self.interface.pending_incoming[transfer_id]
-        del self.interface.pending_incoming[transfer_id]
-
-        self.queue_user_input({
-            "message_name": "MEDIA_RESPONSE",
-            "data": {
-                "chat_id": offer['sender'],
-                "chat_type": offer['chat_type'],
-                "status": "ACCEPT",
-                "transfer_id": transfer_id,
-                "filename": offer['filename']
-            }
-        })
-
-    def reject_transfer(self, transfer_id):
-        if transfer_id not in self.interface.pending_incoming:
-            self.interface.display(f"No pending offer with ID {transfer_id}")
-            return
-
-        offer = self.interface.pending_incoming[transfer_id]
-        del self.interface.pending_incoming[transfer_id]
-
-        self.queue_user_input({
-            "message_name": "MEDIA_RESPONSE",
-            "data": {
-                "chat_id": offer['sender'],
-                "chat_type": offer['chat_type'],
-                "status": "REJECT",
-                "transfer_id": transfer_id
-            }
-        })
-
 
 def main():
     parser = argparse.ArgumentParser()
