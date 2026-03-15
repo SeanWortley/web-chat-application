@@ -396,12 +396,16 @@ class CSProtocol:
             case "Recipient doesn't exist":
                 self.client.interface.process_incorrect_recipient()
                 self.client.database.delete_private_chat_logs(chat_id)
+            case "Recipient is offline":
+                self.client.interface.display("Recipient is offline. Media transfers require the recipient to be online.")
             case "Group doesn't exist":
                 self.client.interface.process_incorrect_group()
                 self.client.database.delete_group_chat_logs(chat_id)
             case "You're not in this group":
                 self.client.interface.process_not_group_member()
                 self.client.database.delete_group_chat_logs(chat_id)
+            case _:
+                self.client.interface.display(error_message)
     
     def handle_SHUTDOWN(self, connection, message):
         """
