@@ -117,6 +117,7 @@ class Protocol:
             self.server.database.create_user(username, hashed_pword)
             connection.authenticated = True
             connection.loggedInAs = username
+            self.server.active_users.append(username)
             self.CREATE_ACCOUNT_OK(connection)
         else:
             self.CREATE_ACCOUNT_FAIL(connection)
@@ -431,6 +432,9 @@ class Protocol:
                                 transfer_id,
                                 ctx.get("receiver_port")
                             )
+                        # Private transfers expect a single responder; clean up immediately.
+                        if ctx.get("chat_type") == "private":
+                            self.pending_offers.pop(transfer_id, None)
                 else:
                     print(f"No offer found for transfer_id {transfer_id}")
 

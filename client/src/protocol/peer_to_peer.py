@@ -13,8 +13,6 @@ class P2PProtocol:
     NACK = 3
 
     CHUNK_SIZE = 1024
-    TIMEOUT = 2.0
-    MAX_RETRIES = 3
 
     def __init__(self, client, udp_connection):
         """
@@ -27,12 +25,6 @@ class P2PProtocol:
 
         self.client = client
         self.udp = udp_connection
-
-        self.callback = None
-
-        # Transfer tracking
-        self.sending = {}
-        self.receiving = {}
 
         self.sent_packet = {}
 
@@ -79,22 +71,25 @@ class P2PProtocol:
             data (bytes): Raw packet data.
             addr (tuple): Sender address (IP, port).
         """
+        if len(data) < 5:
+            return
+
         packet_type = data[0]
         transfer_id = struct.unpack("!I", data[1:5])[0]
         
         if packet_type == self.DATA:
-            self.handle_data_packet(data, addr)
+            self._handle_data_packet(data, addr)
 
         elif packet_type == self.END:
-            self.handle_end_packet(addr, transfer_id)
+            self._handle_end_packet(addr, transfer_id)
 
         elif packet_type in (self.ACK, self.NACK):
             peer_ip, peer_port = addr
-            self.handle_sender_feedback(data, peer_ip, peer_port)
+            self._handle_sender_feedback(data, peer_ip, peer_port)
 
     def retransmit(self, transfer_id, seq, peer_ip, peer_port):
         """
-        Retransmits a previously sent packet after NACK or timeout.
+        Retransmits a previously sent packet after a NACK.
         """
         key = (transfer_id, seq)
 
@@ -142,7 +137,7 @@ class P2PProtocol:
                 seq += 1
                 time.sleep(0.001)
 
-    def handle_sender_feedback(self, data, peer_ip, peer_port):
+    def _handle_sender_feedback(self, data, peer_ip, peer_port):
         """
         Handles ACK/NACK feedback from receiver for reliability.
         """
@@ -158,21 +153,21 @@ class P2PProtocol:
         elif packet_type == self.NACK:
             self.retransmit(transfer_id, seq, peer_ip, peer_port)
 
-    def receiver_send_ack(self, addr, transfer_id, seq):
+    def _receiver_send_ack(self, addr, transfer_id, seq):
         """
         Sends an ACK for a received packet to the sender.
         """
         packet = struct.pack("!BII", self.ACK, transfer_id, seq)
         self.udp.send(packet, addr)
 
-    def receiver_send_nack(self, addr, transfer_id, seq):
+    def _receiver_send_nack(self, addr, transfer_id, seq):
         """
         Sends a NACK for a missing packet to request retransmission.
         """
         packet = struct.pack("!BII", self.NACK, transfer_id, seq)
         self.udp.send(packet, addr)
 
-    def handle_data_packet(self, data, addr):
+    def _handle_data_packet(self, data, addr):
         """
         Processes incoming data packets, writes in-order chunks, 
         and manages out-of-order buffering.
@@ -205,7 +200,7 @@ class P2PProtocol:
             file.write(chunk)
             self.recv_expected[key] += 1
 
-            self.receiver_send_ack(addr, transfer_id, seq)
+            self._receiver_send_ack(addr, transfer_id, seq)
 
             while self.recv_expected[key] in buffer:
                 file.write(buffer.pop(self.recv_expected[key]))
@@ -214,13 +209,13 @@ class P2PProtocol:
         elif seq > expected:
 
             buffer[seq] = chunk
-            self.receiver_send_nack(addr, transfer_id, expected)
+            self._receiver_send_nack(addr, transfer_id, expected)
 
         else:
 
-            self.receiver_send_ack(addr, transfer_id, seq)
+            self._receiver_send_ack(addr, transfer_id, seq)
 
-    def handle_end_packet(self, addr, transfer_id):
+    def _handle_end_packet(self, addr, transfer_id):
         """
         Finalizes the file transfer, closes temporary file,
         and moves it to the Downloads folder.

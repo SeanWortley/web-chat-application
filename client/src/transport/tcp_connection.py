@@ -1,8 +1,5 @@
 import json
-from queue import Queue
 from threading import Thread
-import socket
-import traceback
 
 class TCPConnection:
     """Wraps a TCP socket for framed JSON send/receive handling."""

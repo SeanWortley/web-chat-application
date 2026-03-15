@@ -176,7 +176,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", type=str, default="127.0.0.1")
     parser.add_argument("--port", type=int, default=12000)
-    parser.add_argument("--verbose", type=bool, default=True)
+    parser.add_argument("--verbose", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--clean", action="store_true", default=False)
     args = parser.parse_args()
     print(args.host, args.port, args.verbose)

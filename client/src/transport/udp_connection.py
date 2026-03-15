@@ -1,8 +1,6 @@
 import socket
 import threading
 import struct
-import os
-import time
 
 class UDPConnection:
     """Manages UDP socket lifecycle for peer-to-peer transfers."""
@@ -57,19 +55,6 @@ class UDPConnection:
             self.socket.close()
         #print("[UDP] Stopped")
 
-    def retransmit(self, transfer_id, chunk_index, peer_ip, peer_port):
-        """
-        Sends a NACK packet to request retransmission of a specific chunk.
-
-        Args:
-            transfer_id (int): Unique ID of the transfer.
-            chunk_index (int): Index of the chunk to retransmit.
-            peer_ip (str): Recipient IP address.
-            peer_port (int): Recipient port number.
-        """
-        packet = struct.pack("!BIIB", self.NACK, transfer_id, chunk_index, 0)
-        self.socket.sendto(packet, (peer_ip, peer_port))
-
     def send(self, data, address):
         """
         Sends raw data to a specific UDP address.
@@ -79,15 +64,3 @@ class UDPConnection:
             address (tuple): (IP, port) tuple of the recipient.
         """
         self.socket.sendto(data, address)
-
-    def receive(self, buffer_size=1024):
-        """
-        Receives a UDP packet from the socket.
-
-        Args:
-            buffer_size (int, optional): Maximum bytes to read. Defaults to 1024.
-
-        Returns:
-            tuple: (data, address) received from the sender.
-        """
-        return self.socket.recvfrom(buffer_size)
