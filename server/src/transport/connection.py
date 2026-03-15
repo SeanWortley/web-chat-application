@@ -4,6 +4,13 @@ from threading import Thread
 
 class Connection:
     def __init__(self, socket, server):
+        """
+        Initializes a client connection.
+
+        Args:
+            socket (socket): The underlying TCP socket.
+            server (Server): Reference to the server instance.
+        """
         self.socket = socket
         self.server = server
         self.authenticated = False
@@ -11,11 +18,18 @@ class Connection:
         self.running = True
 
     def start(self):
+        """
+        Starts a background thread to listen for incoming messages.
+        """
         thread = Thread(target=self.listen)
         thread.daemon = True
         thread.start()
 
     def listen(self):
+        """
+        Receives messages from the client, decodes them, and forwards
+        to the server protocol. Cleans up on disconnect or error.
+        """
         try:
             buffer = b""
             while True:
@@ -58,6 +72,13 @@ class Connection:
             self.close()
 
     def sendJson(self, outgoing, payload=None):
+        """
+        Sends a JSON message to the client, optionally including a payload.
+
+        Args:
+            outgoing (dict): Message header and data.
+            payload (str | bytes, optional): Message body content.
+        """
         message_name = outgoing.get("message_name")
         payload_messages = ["MSG"]
 
@@ -73,6 +94,9 @@ class Connection:
         self.socket.sendall(header + b"\n" + body)
 
     def close(self):
+        """
+        Closes the client connection and removes it from the server.
+        """
         self.running = False
         self.server.log(f"CLOSING:{self.socket}, {self.loggedInAs}")
         if hasattr(self, 'socket') and self.socket and not self.socket._closed:

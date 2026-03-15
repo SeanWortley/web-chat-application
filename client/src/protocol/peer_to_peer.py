@@ -16,6 +16,13 @@ class P2PProtocol:
     MAX_RETRIES = 3
 
     def __init__(self, client, udp_connection):
+        """
+        Initializes P2P protocol for file transfers over UDP.
+
+        Args:
+            client (Client): Reference to the client using this protocol.
+            udp_connection (UDPConnection): UDP transport for sending/receiving packets.
+        """
 
         self.client = client
         self.udp = udp_connection
@@ -35,12 +42,24 @@ class P2PProtocol:
         self.recv_filenames = {}
 
     def _temp_bin_path(self, transfer_id):
+        """
+        Returns temporary path for incoming file data.
+
+        Args:
+            transfer_id (int): Unique ID of the file transfer.
+
+        Returns:
+            Path: Path to temporary binary file.
+        """
         incoming_dir = Path(__file__).resolve().parents[2] / "runtime" / "incoming"
         incoming_dir.mkdir(parents=True, exist_ok=True)
         username = self.client.loggedInAs or "unknown"
         return incoming_dir / f"recv_{username}_{transfer_id}.bin"
 
     def clear_stale_temp_files_for_user(self, username):
+        """
+        Deletes any leftover temporary files for a user.
+        """
         if not username:
             return
         incoming_dir = Path(__file__).resolve().parents[2] / "runtime" / "incoming"
@@ -52,7 +71,13 @@ class P2PProtocol:
                 pass
 
     def handle_packet(self, data, addr):
+        """
+        Routes incoming UDP packets based on type: DATA, END, ACK, NACK.
 
+        Args:
+            data (bytes): Raw packet data.
+            addr (tuple): Sender address (IP, port).
+        """
         packet_type = data[0]
         transfer_id = struct.unpack("!I", data[1:5])[0]
         
@@ -67,7 +92,9 @@ class P2PProtocol:
             self.handle_sender_feedback(data, peer_ip, peer_port)
 
     def retransmit(self, transfer_id, seq, peer_ip, peer_port):
-
+        """
+        Retransmits a previously sent packet after NACK or timeout.
+        """
         key = (transfer_id, seq)
 
         if key in self.sent_packet:
@@ -75,6 +102,9 @@ class P2PProtocol:
             self.udp.send(packet, (peer_ip, peer_port))
 
     def initiate_udp_transfer(self, transfer_id, filepath, peer_ip, peer_port):
+        """
+        Starts a threaded UDP file transfer to a peer.
+        """       
         thread = threading.Thread(
             target=self._send_file,
             args=(transfer_id, filepath, peer_ip, peer_port),
@@ -83,7 +113,9 @@ class P2PProtocol:
         thread.start()
 
     def _send_file(self, transfer_id, filepath, peer_ip, peer_port):
-
+        """
+        Sends file in chunks with sequence numbers over UDP.
+        """
         file_path = Path(filepath)
         if not file_path.exists():
             print(f"File not found: {filepath}")
@@ -110,7 +142,9 @@ class P2PProtocol:
                 time.sleep(0.001)
 
     def handle_sender_feedback(self, data, peer_ip, peer_port):
-
+        """
+        Handles ACK/NACK feedback from receiver for reliability.
+        """
         packet_type, transfer_id, seq = struct.unpack("!BII", data[:9])
 
         if packet_type == self.ACK:
@@ -124,17 +158,24 @@ class P2PProtocol:
             self.retransmit(transfer_id, seq, peer_ip, peer_port)
 
     def receiver_send_ack(self, addr, transfer_id, seq):
-
+        """
+        Sends an ACK for a received packet to the sender.
+        """
         packet = struct.pack("!BII", self.ACK, transfer_id, seq)
         self.udp.send(packet, addr)
 
     def receiver_send_nack(self, addr, transfer_id, seq):
-
+        """
+        Sends a NACK for a missing packet to request retransmission.
+        """
         packet = struct.pack("!BII", self.NACK, transfer_id, seq)
         self.udp.send(packet, addr)
 
     def handle_data_packet(self, data, addr):
-
+        """
+        Processes incoming data packets, writes in-order chunks, 
+        and manages out-of-order buffering.
+        """
         if len(data) < 9:
             print(f"[UDP] Packet too short from {addr}, ignoring")
             return
@@ -179,7 +220,10 @@ class P2PProtocol:
             self.receiver_send_ack(addr, transfer_id, seq)
 
     def handle_end_packet(self, addr, transfer_id):
-
+        """
+        Finalizes the file transfer, closes temporary file,
+        and moves it to the Downloads folder.
+        """
         key = (addr, transfer_id)
 
         if key in self.recv_files:
