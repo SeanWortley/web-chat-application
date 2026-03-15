@@ -1,11 +1,11 @@
 import socket
 import threading
 import struct
-import os
-import time
 
 class UDPConnection:
     """Manages UDP socket lifecycle for peer-to-peer transfers."""
+
+    NACK = 3
 
     def __init__(self, client):
         """
@@ -79,15 +79,3 @@ class UDPConnection:
             address (tuple): (IP, port) tuple of the recipient.
         """
         self.socket.sendto(data, address)
-
-    def receive(self, buffer_size=1024):
-        """
-        Receives a UDP packet from the socket.
-
-        Args:
-            buffer_size (int, optional): Maximum bytes to read. Defaults to 1024.
-
-        Returns:
-            tuple: (data, address) received from the sender.
-        """
-        return self.socket.recvfrom(buffer_size)
