@@ -7,6 +7,10 @@ import queue
 
 class GUI:
     def __init__(self):
+        """
+        Initializes the GUI application, main window, state variables,
+        and message queues for thread-safe communication.
+        """
         self.root = tk.Tk()
         self.root.title("Chat Application")
         self.root.geometry("600x500")
@@ -29,6 +33,10 @@ class GUI:
         self.pending_outgoing = {}
         
     def start(self):
+        """
+        Starts the GUI by displaying the login screen and launching
+        the Tkinter event loop.
+        """
         # After prompting  it in the terminal, this will start the GUI and show the login screen.  
         # The process_queue method will be called every 100ms to check for messages from other threads and update the GUI accordingly.
         # Show login screen first
@@ -39,6 +47,10 @@ class GUI:
         self.root.mainloop()
         
     def process_queue(self):
+        """
+        Processes messages from the internal queue and updates the GUI
+        with display text, incoming messages, or unsent message batches.
+        """
         # This method is called using after() to check the message queue for any updates that need to be reflected in the GUI.
         try:
             while True:
@@ -56,12 +68,20 @@ class GUI:
             self.root.after(100, self.process_queue)
     
     def _display_text(self, text):
-        """Display text in the main window"""
+        """
+        Displays text in the main output area of the GUI.
+
+        Args:
+            text (str): Text to display.
+        """
         if hasattr(self, 'output_area') and self.output_area.winfo_exists():
             self.output_area.insert(tk.END, text + "\n")
             self.output_area.see(tk.END)
     
     def show_login_screen(self):
+        """
+        Displays the login and registration interface.
+        """
         # This will display the login screen where users can enter their username and password to either log in or register a new account.
         for widget in self.root.winfo_children():
             widget.destroy()
@@ -87,6 +107,9 @@ class GUI:
         tk.Button(btn_frame, text="Register", command=self.register, width=10).pack(side=tk.LEFT, padx=5)
     
     def show_main_menu(self):
+        """
+        Displays the main application menu after successful login.
+        """
         # Display the chat menu after the user has successfully logged in. 
         for widget in self.root.winfo_children():
             widget.destroy()
@@ -117,6 +140,10 @@ class GUI:
         self.output_area.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=10, pady=10)
     
     def login(self):
+        """
+        Handles login button action, hashes the password,
+        and sends an authentication request to the server.
+        """
         # When the user clicks the login button, this method will be called. It will hash the password using SHA-256 and then send the login information to the server using the on_user_input callback. 
         username = self.login_username.get()
         password = self.login_password.get()
@@ -133,6 +160,13 @@ class GUI:
             self.root.after(100, lambda: self._send_login(username, hashed))
     
     def _send_login(self, username, hashed):
+        """
+        Sends the authentication request to the client logic.
+
+        Args:
+            username (str): User's username.
+            hashed (str): SHA-256 hashed password.
+        """
         # Sends the login information to the server. It uses the on_user_input callback to send a message with the username and hashed password.
         if self.on_user_input:
             self.on_user_input({
@@ -144,6 +178,10 @@ class GUI:
             })
     
     def register(self):
+        """
+        Handles account registration by hashing the password
+        and sending the request to the server.
+        """
         # Similar to the login method, this will be called when the user clicks the register button. It will also hash the password and send the new user's details to the server.
         username = self.login_username.get()
         password = self.login_password.get()
@@ -159,6 +197,13 @@ class GUI:
             self.root.after(100, lambda: self._send_register(username, hashed))
     
     def _send_register(self, username, hashed):
+        """
+        Sends account creation request to the client logic.
+
+        Args:
+            username (str): New username.
+            hashed (str): SHA-256 hashed password.
+        """
         # This method sends the registration information to the server. It uses the on_user_input callback to send a message with the username and hashed password for account creation.
         if self.on_user_input:
             self.on_user_input({
@@ -170,6 +215,9 @@ class GUI:
             })
     
     def start_private_chat(self):
+        """
+        Prompts the user for a recipient and opens a private chat window.
+        """
         # This method will be called when the user clicks the "Private Chat" button. It will prompt the user to enter the username of the person they want to chat with and then open a new chat window for that private conversation.
         recipient = simpledialog.askstring("Private Chat", "Enter username of the person you want to chat with:")
         # If the user cancels the prompt or leaves it empty, we simply return without doing anything. 
@@ -184,6 +232,12 @@ class GUI:
         self.load_private_logs(recipient)
 
     def load_private_logs(self, chat_id):
+        """
+        Loads and displays stored private chat history.
+
+        Args:
+            chat_id (str): Username of the private chat partner.
+        """
         print(f"load_private_logs: chat_id={chat_id}")
         if not hasattr(self, 'database') or not self.database:
             print("No database")
@@ -224,6 +278,12 @@ class GUI:
         chat_display.see(tk.END)
 
     def load_group_logs(self, group_id):
+        """
+        Loads and displays stored group chat history.
+
+        Args:
+            group_id (str): Name of the group chat.
+        """
         print(f"load_group_logs: group_id={group_id}")
         if not hasattr(self, 'database') or not self.database:
             print("No database")
@@ -264,6 +324,9 @@ class GUI:
         chat_display.see(tk.END)
     
     def start_group_chat(self):
+        """
+        Prompts the user for a group name and opens a group chat window.
+        """
         # Similar to the start_private_chat method, this will be called when the user clicks the "Group Chat" button. It will prompt the user to enter the name of the group they want to chat in and then open a new chat window for that group conversation.
         group = simpledialog.askstring("Group Chat", "Enter group name you want to join:")
         # If the user cancels the prompt or leaves it empty, we simply return without doing anything.
@@ -278,6 +341,13 @@ class GUI:
         self.load_group_logs(group)
     
     def open_chat_window(self, chat_id, chat_type):
+        """
+        Opens a new chat window for a private or group conversation.
+
+        Args:
+            chat_id (str): Username or group name.
+            chat_type (str): 'private' or 'group'.
+        """
         # Opens a new chat window for either a private or group chat. It takes the chat_id (username = private chats and the group name = group chats).
         if chat_id in self.chat_windows:
             self.chat_windows[chat_id].lift()
@@ -364,6 +434,15 @@ class GUI:
     
 
     def send_chat_message(self, entry, chat_id, chat_type, display):
+        """
+        Sends a chat message to the server and updates the chat window.
+
+        Args:
+            entry (tk.Entry): Input widget containing message text.
+            chat_id (str): Chat identifier.
+            chat_type (str): Chat type ('private' or 'group').
+            display (ScrolledText): Chat display widget.
+        """
     # Triggered when the user clicks the send button or presses Enter in the chat input field.
         text = entry.get()
         if not text:
@@ -389,6 +468,9 @@ class GUI:
             })
 
     def view_groups(self):
+        """
+        Requests the list of groups the user belongs to.
+        """
         # Triggered when the user clicks the "View Groups" button. A request will be sent to the server to get the list of groups that the user is a member of, and then display that list in a message box.
         if self.on_user_input:
             self.on_user_input({
@@ -396,6 +478,9 @@ class GUI:
             })
     
     def create_group(self):
+        """
+        Prompts the user for a group name and sends a group creation request.
+        """
         # Triggered when the user clicks the "Create Group" button. It will prompt the user to enter a name for the new group they want to create, and then send that information to the server to create the group.
         group = simpledialog.askstring("Create Group", "Enter group name:")
         if group and self.on_user_input:
@@ -405,6 +490,9 @@ class GUI:
             })
     
     def join_group(self):
+        """
+        Prompts the user for a group name and sends a join request.
+        """
         # Triggered when the user clicks the "Join Group" button. It will prompt the user to enter the name of the group they want to join, and then send that information to the server to request to join the group.
         group = simpledialog.askstring("Join Group", "Enter group name:")
         if group and self.on_user_input:
@@ -414,6 +502,9 @@ class GUI:
             })
     
     def logout(self):
+        """
+        Sends a logout request and returns the interface to the login screen.
+        """
        # Triggered when the user clicks the "Logout" button. It will send a logout message to the server and then return the user to the login screen.
         if self.on_user_input:
             self.on_user_input({"message_name": "LOGOUT"})
@@ -421,13 +512,26 @@ class GUI:
         self.root.after(0, self.show_login_screen)
     
     def display(self, text):
+        """
+        Queues text for display in the GUI.
+
+        Args:
+            text (str): Message to display.
+        """
         self.message_queue.put({"type": "display", "text": text})
     
     def process_msg(self, message, channel):
+        """
+        Queues an incoming message for GUI processing.
+        """
         # Called by the client when a new message is received from the server.
         self.message_queue.put({"type": "message", "data": message})
     
     def _handle_incoming_message(self, message):
+        """
+        Displays incoming messages in the appropriate chat window
+        or stores them as unread notifications.
+        """
     # Processes incoming messages and determines where to display them.
         data = message.get("data", {})
         from_user = data.get("from")
@@ -478,10 +582,16 @@ class GUI:
             self.output_area.see(tk.END)
     
     def process_unsent_batch(self, groups):
+        """
+        Queues a batch of unsent messages retrieved from the server.
+        """
         #Puts unsent messages into the message queue to be processed in the main thread.
         self.message_queue.put({"type": "unsent", "data": groups})
     
     def _handle_unsent_messages(self, groups):
+        """
+        Processes previously unsent messages and displays them in chats.
+        """
         for chat_id, messages in groups.items():
             for msg in messages:
                 # Queue them as regular messages
@@ -496,18 +606,29 @@ class GUI:
                 self._handle_incoming_message(fake_msg)
     
     def resume(self):
+        """
+        Placeholder method used for interface compatibility.
+        """
         pass
     
     def show_logged_in_menu(self):
+        """
+        Displays the main menu after successful login.
+        """
        # display the main menu after the user has successfully logged in. It sets the logged_in flag to True and then calls the show_main_menu method to update the GUI to show the main menu options.
         self.logged_in = True
         self.root.after(0, self.show_main_menu)
     
     def show_logged_out_menu(self):
+        """
+        Displays the login screen after logout.
+        """
         self.root.after(0, self.show_login_screen)
 
     def process_self_message(self):
-        """Called when a user messages themself."""
+        """
+        Handles attempts to send a message to oneself.
+        """
         # Find and close any chat window for the invalid recipient
         if self.current_chat and self.current_chat in self.chat_windows:
             chat_id = self.current_chat
@@ -522,7 +643,9 @@ class GUI:
             self.root.after(0, lambda: messagebox.showerror("Error", "This user does not exist!"))
 
     def process_incorrect_recipient(self):
-        """Called when a private message recipient doesn't exist."""
+        """
+        Handles invalid private chat recipients.
+        """
         # Find and close any chat window for the invalid recipient
         if self.current_chat and self.current_chat in self.chat_windows:
             chat_id = self.current_chat
@@ -537,7 +660,9 @@ class GUI:
             self.root.after(0, lambda: messagebox.showerror("Error", "This user does not exist!"))
 
     def process_incorrect_group(self):
-        """Called when a group chat target doesn't exist."""
+        """
+        Handles attempts to message a non-existent group.
+        """
         if self.current_chat and self.current_chat in self.chat_windows:
             chat_id = self.current_chat
             window = self.chat_windows[chat_id]
@@ -551,7 +676,9 @@ class GUI:
             self.root.after(0, lambda: messagebox.showerror("Error", "This group does not exist!"))
 
     def process_not_group_member(self):
-        """Called when the user tries to message a group they're not in."""
+        """
+        Handles attempts to message a group the user does not belong to.
+        """
         if self.current_chat and self.current_chat in self.chat_windows:
             chat_id = self.current_chat
             window = self.chat_windows[chat_id]
@@ -565,12 +692,19 @@ class GUI:
             self.root.after(0, lambda: messagebox.showerror("Error", "You are not a member of this group!"))
     
     def process_shutdown(self):
+        """
+        Handles server shutdown notifications and closes the GUI.
+        """
         self.root.after(0, lambda: [
             messagebox.showinfo("Server", "Server has shut down."),
             self.root.destroy()
         ])
 
     def handle_incoming_offer(self, message):
+        """
+        Handles incoming file transfer offers and prompts the user
+        to accept or reject the transfer.
+        """
         data = message.get("data", {})
         transfer_id = data.get("transfer_id")
         if not transfer_id:
@@ -627,6 +761,9 @@ class GUI:
         self.root.after(0, show_offer)
 
     def handle_incoming_response(self, message):
+        """
+        Processes responses to file transfer offers sent by the user.
+        """
         data = message.get("data", {})
         transfer_id = data.get("transfer_id")
         status = data.get("status")
@@ -657,6 +794,12 @@ class GUI:
             self.root.after(0, lambda: self.display(f"{responder} rejected your file transfer."))
 
     def on_file_received(self, filepath):
+        """
+        Notifies the user that a file transfer has completed.
+
+        Args:
+            filepath (str): Location where the file was saved.
+        """
         self.root.after(0, lambda: messagebox.showinfo(
             "Transfer Complete",
             f"File received!\n\nSaved to:\n{filepath}"

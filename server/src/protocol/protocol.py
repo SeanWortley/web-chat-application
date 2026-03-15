@@ -3,7 +3,33 @@ import time
 
 
 class Protocol:
+    """
+    Handles the messaging protocol used by the server.
+
+    The Protocol class is responsible for interpreting incoming client
+    commands and dispatching them to the appropriate handler methods.
+    Each supported command is mapped to a handler function through the
+    `handlers` dictionary.
+
+    It also manages pending media offers and provides thread-safe
+    access using a lock when modifying shared state.
+    """
     def __init__(self, server):
+        """
+        Initializes the protocol handler.
+
+        Args:
+            server (Server): Reference to the main server instance that
+                owns this protocol handler. Used to access server state,
+                connections, and shared resources.
+
+        Attributes:
+            server (Server): The parent server instance.
+            pending_offers (dict): Stores pending media offers between users.
+            lock (threading.Lock): Ensures thread-safe access to shared data.
+            handlers (dict): Maps protocol command strings to their
+                corresponding handler methods.
+        """
         self.server = server
         self.pending_offers = {}
         self.lock = threading.Lock()
@@ -21,6 +47,24 @@ class Protocol:
         }
 
     def handleIncoming(self, connection, clientMessage):
+        """
+        Processes an incoming message from a client and dispatches it to the
+        appropriate protocol handler.
+
+        This method extracts the message type from the incoming message and
+        looks up the corresponding handler function in the `handlers` mapping.
+        If a matching handler is found, it is executed with the connection and
+        message data. If no handler exists for the message type, the event is
+        logged as an unknown message.
+
+        Args:
+            connection (Connection): The client connection that sent the message.
+            clientMessage (dict): The parsed message received from the client.
+                It must contain a `"message_name"` field specifying the command.
+
+        Raises:
+            KeyError: If `"message_name"` is missing from the message dictionary.
+        """
         messageName = clientMessage["message_name"]
         handler = self.handlers.get(messageName)
         if handler:
@@ -29,6 +73,17 @@ class Protocol:
             self.server.log(f"Unknown message: {clientMessage['message_name']}")
 
     def handle_AUTH(self, connection, message):
+        """
+        Handles client authentication.
+
+        Verifies the provided username and hashed password against the
+        database. If valid and the user is not already logged in, the
+        connection is authenticated.
+
+        Args:
+            connection (Connection): The client connection attempting login.
+            message (dict): The AUTH message containing login credentials.
+        """
         username = message["data"]["username"]
         hashed_pword = message["data"]["hashed_password"]
 
@@ -44,6 +99,16 @@ class Protocol:
             self.AUTH_FAIL(connection, "Incorrect name or password!")
 
     def handle_CREATE_ACCOUNT(self, connection, message):
+        """
+        Handles creation of a new user account.
+
+        If the username does not exist, creates the account, authenticates
+        the connection, and sends a success message. Otherwise, sends a failure.
+
+        Args:
+            connection (Connection): The client connection requesting account creation.
+            message (dict): The CREATE_ACCOUNT message containing credentials.
+        """
         username = message["data"]["username"]
         hashed_pword = message["data"]["hashed_password"]
 
@@ -57,6 +122,16 @@ class Protocol:
             self.CREATE_ACCOUNT_FAIL(connection)
 
     def handle_LOGOUT(self, connection, message):
+        """
+        Logs out a user and updates server state.
+
+        Marks the connection as unauthenticated, removes the user from active
+        users, and sends a logout acknowledgement.
+
+        Args:
+            connection (Connection): The client connection requesting logout.
+            message (dict): The LOGOUT message (unused, but included for consistency).
+        """
         username = connection.loggedInAs
         connection.authenticated = False
         connection.loggedInAs = None
@@ -65,6 +140,16 @@ class Protocol:
         self.LOGOUT_ACK(connection, username)
 
     def handle_REQUEST_UNSENT_MESSAGES(self, connection, message):
+        """
+        Sends offline messages to the authenticated user.
+
+        Groups messages by sender or group and sends them to the client,
+        then deletes them from the database.
+
+        Args:
+            connection (Connection): The authenticated client connection.
+            message (dict): The request message (unused here).
+        """
         if not connection.authenticated:
             return
 
@@ -94,6 +179,13 @@ class Protocol:
         self.server.database.delete_offline_messages(username)
 
     def UNSENT_MESSAGES(self, connection, groups):
+        """
+        Sends unsent messages grouped by sender or group to the client.
+
+        Args:
+            connection (Connection): The client connection to send messages to.
+            groups (dict): Dictionary of grouped offline messages.
+        """
         connection.sendJson({
             "message_name": "UNSENT_MESSAGES",
             "data": {
@@ -102,6 +194,12 @@ class Protocol:
         })
 
     def AUTH_OK(self, connection):
+        """
+        Sends an authentication success message to the client.
+
+        Args:
+            connection (Connection): The authenticated client connection.
+        """
         welcome_message = f"Welcome back, {connection.loggedInAs}!"
 
         connection.sendJson({
@@ -112,6 +210,13 @@ class Protocol:
         })
 
     def AUTH_FAIL(self, connection, error_message):
+        """
+        Sends an authentication failure message to the client.
+
+        Args:
+            connection (Connection): The client connection that failed authentication.
+            error_message (str): Explanation of the failure.
+        """
         connection.sendJson({
             "message_name": "AUTH_FAIL",
             "data": {
@@ -119,6 +224,12 @@ class Protocol:
         })
 
     def CREATE_ACCOUNT_OK(self, connection):
+        """
+        Sends account creation success message to the client.
+
+        Args:
+            connection (Connection): The client connection that successfully created an account.
+        """
         welcome_message = f"welcome new user, {connection.loggedInAs}!"
 
         connection.sendJson({
@@ -129,6 +240,12 @@ class Protocol:
         })
 
     def CREATE_ACCOUNT_FAIL(self, connection):
+        """
+        Sends account creation failure message if username already exists.
+
+        Args:
+            connection (Connection): The client connection that attempted account creation.
+        """
         error_message = "A user with that name already exists!"
 
         connection.sendJson({
@@ -139,6 +256,13 @@ class Protocol:
         })
 
     def LOGOUT_ACK(self, connection, username):
+        """
+        Sends a logout acknowledgement message to the client.
+
+        Args:
+            connection (Connection): The client connection logging out.
+            username (str | None): Username of the client or None if already logged out.
+        """
         if username:
             goodbye_message = f"Goodbye, {username}!"
         else:
@@ -152,6 +276,16 @@ class Protocol:
         })
 
     def handle_MSG(self, connection, message):
+        """
+        Processes an incoming message (private or group) and routes it.
+
+        Checks authentication and validates recipients or groups, then
+        forwards the message or stores it offline if the recipient is unavailable.
+
+        Args:
+            connection (Connection): The client sending the message.
+            message (dict): The message payload containing metadata and content.
+        """
         message_name = message.get("message_name")
         data = message.get("data", {})
         raw_chat_id = data.get("chat_id")
@@ -224,12 +358,29 @@ class Protocol:
                 self.route_message(message_name, group_context)
 
     def route_message(self, message_name, context):
+        """
+        Routes a message to either media or text handler based on its type.
+
+        Args:
+            message_name (str): The type of message (e.g., "MSG", "MEDIA_OFFER").
+            context (dict): Context dictionary with message details.
+        """
         if message_name.startswith("MEDIA_"):
             self.handle_media_message(message_name, context)
         else:
             self.handle_text_message(message_name, context)
 
     def handle_media_message(self, message_name, ctx):
+        """
+        Handles media messages like MEDIA_OFFER or MEDIA_RESPONSE.
+
+        Updates pending offers, forwards offers to recipients, and notifies
+        senders of responses.
+
+        Args:
+            message_name (str): Type of media message.
+            ctx (dict): Message context including sender, recipient, and metadata.
+        """
         target_conn = ctx["target_conn"]
 
         if message_name == "MEDIA_OFFER":
@@ -284,6 +435,15 @@ class Protocol:
                     print(f"No offer found for transfer_id {transfer_id}")
 
     def add_offer(self, transfer_id, sender, sender_port, recipient):
+        """
+        Records a new media transfer offer in the pending offers dictionary.
+
+        Args:
+            transfer_id (str): Unique ID of the media transfer.
+            sender (str): Username of the sender.
+            sender_port (int): Port used by the sender.
+            recipient (str): Username of the recipient.
+        """
         with self.lock:
             self.pending_offers[transfer_id] = {
                 'sender': sender,
@@ -295,6 +455,13 @@ class Protocol:
         print(f"Added offer {transfer_id}")
 
     def handle_text_message(self, message_name, ctx):
+        """
+        Sends text messages to online recipients or stores them offline.
+
+        Args:
+            message_name (str): The type of message (e.g., "MSG").
+            ctx (dict): Message context including sender, recipient, and payload.
+        """
         target_conn = ctx["target_conn"]
 
         if target_conn and message_name == "MSG":
@@ -322,6 +489,16 @@ class Protocol:
             )
 
     def handle_CREATE_GROUP(self, connection, message):
+        """
+        Handles creation of a new group chat.
+
+        Validates authentication, ensures the group doesn't exist, then
+        creates it and sends acknowledgement.
+
+        Args:
+            connection (Connection): The client requesting group creation.
+            message (dict): Contains the group name.
+        """
         if not connection.authenticated:
             self.CREATE_GROUP_ACK(connection, "fail", "You aren't logged in")
             return
@@ -337,6 +514,16 @@ class Protocol:
         self.CREATE_GROUP_ACK(connection, "success", f"Group '{group_name}' created!")
 
     def handle_JOIN_GROUP(self, connection, message):
+        """
+        Adds an authenticated user to an existing group.
+
+        Validates authentication, checks group existence and membership,
+        then adds the user and sends acknowledgement.
+
+        Args:
+            connection (Connection): The client joining the group.
+            message (dict): Contains the group name.
+        """
         if not connection.authenticated:
             self.JOIN_GROUP_ACK(connection, "fail", "You aren't logged in")
             return
@@ -356,6 +543,13 @@ class Protocol:
         self.JOIN_GROUP_ACK(connection, "success", f"You joined '{group_name}'")
 
     def handle_GROUP_LIST(self, connection, message):
+        """
+        Sends a list of groups the authenticated user belongs to.
+
+        Args:
+            connection (Connection): The client requesting the group list.
+            message (dict): Unused placeholder for consistency.
+        """
         if not connection.authenticated:
             self.GROUP_LIST_ACK(connection, "fail", [], "You aren't logged in")
             return
@@ -367,6 +561,15 @@ class Protocol:
         self.GROUP_LIST_ACK(connection, "success", group_names, None)
 
     def GROUP_LIST_ACK(self, connection, result, groups, message):
+        """
+        Sends acknowledgement for a group list request.
+
+        Args:
+            connection (Connection): The client receiving the list.
+            result (str): "success" or "fail".
+            groups (list): List of group names.
+            message (str | None): Optional status message.
+        """
         connection.sendJson({
             "message_name": "GROUP_LIST_ACK",
             "data": {
@@ -377,6 +580,14 @@ class Protocol:
         })
 
     def CREATE_GROUP_ACK(self, connection, result, message):
+        """
+        Sends acknowledgement for a create group request.
+
+        Args:
+            connection (Connection): The client receiving the acknowledgement.
+            result (str): "success" or "fail".
+            message (str): Status message to send.
+        """
         connection.sendJson({
             "message_name": "CREATE_GROUP_ACK",
             "data": {
@@ -386,6 +597,14 @@ class Protocol:
         })
 
     def JOIN_GROUP_ACK(self, connection, result, message):
+        """
+        Sends acknowledgement for a join group request.
+
+        Args:
+            connection (Connection): The client receiving the acknowledgement.
+            result (str): "success" or "fail".
+            message (str): Status message to send.
+        """
         connection.sendJson({
             "message_name": "JOIN_GROUP_ACK",
             "data": {
@@ -395,12 +614,34 @@ class Protocol:
         })
 
     def get_user_connection(self, username):
+        """
+        Returns the active connection object for a given authenticated user.
+
+        Args:
+            username (str): The username to look up.
+
+        Returns:
+            Connection | None: The active connection or None if not found.
+        """
         for conn in self.server.connections:
             if conn.loggedInAs == username and conn.authenticated:
                 return conn
         return None
 
     def forward_MEDIA_OFFER(self, recipient_conn, from_user, chat_id, chat_type, transfer_id, filename, filesize, sender_port):
+        """
+        Forwards a media offer to the intended recipient.
+
+        Args:
+            recipient_conn (Connection): Recipient's connection object.
+            from_user (str): Sender's username.
+            chat_id (str): Target chat or group ID.
+            chat_type (str): "private" or "group".
+            transfer_id (str): Unique media transfer ID.
+            filename (str): Name of the file being transferred.
+            filesize (int): Size of the file in bytes.
+            sender_port (int): Port used by the sender.
+        """
         media_offer_sender_conn = self.get_user_connection(from_user)
         if not media_offer_sender_conn:
             self.server.log(f"MEDIA_OFFER skipped: sender connection not found for '{from_user}'")
@@ -424,6 +665,17 @@ class Protocol:
         })
 
     def forward_MEDIA_RESPONSE(self, recipient_conn, to_user, from_user, status, transfer_id, receiver_port):
+        """
+        Forwards a media response (accept/decline) to the original sender.
+
+        Args:
+            recipient_conn (Connection): Original sender's connection object.
+            to_user (str): Intended recipient username.
+            from_user (str): Responder's username.
+            status (str): Status of the media transfer.
+            transfer_id (str): Unique media transfer ID.
+            receiver_port (int): Port on which recipient can receive data.
+        """
         media_response_sender_conn = self.get_user_connection(from_user)
         if not media_response_sender_conn:
             self.server.log(f"MEDIA_RESPONSE skipped: sender connection not found for '{from_user}'")
@@ -442,6 +694,18 @@ class Protocol:
         })
 
     def forward_message(self, recipient_conn, from_user, chat_id, chat_type, msg_id, timestamp, payload):
+        """
+        Sends a text message to a recipient connection.
+
+        Args:
+            recipient_conn (Connection): Recipient's connection object.
+            from_user (str): Sender's username.
+            chat_id (str): Chat or group ID.
+            chat_type (str): "private" or "group".
+            msg_id (str): Unique message ID.
+            timestamp (float): Time the message was sent.
+            payload (str): Message content.
+        """
         recipient_conn.sendJson({
             "message_name": "MSG",
             "type": "DATA",
@@ -456,6 +720,14 @@ class Protocol:
         })
 
     def MSG_NAK(self, connection, chat_id, error_message):
+        """
+        Sends a negative acknowledgement (NAK) for a message.
+
+        Args:
+            connection (Connection): The client to notify.
+            chat_id (str): ID of the intended chat.
+            error_message (str): Reason the message could not be delivered.
+        """
         connection.sendJson({
             "message_name": "MSG_NAK",
             "data": {
@@ -465,6 +737,12 @@ class Protocol:
         })
 
     def SHUTDOWN(self, connection):
+        """
+        Sends a shutdown notification to a client connection.
+
+        Args:
+            connection (Connection): The client being notified of server shutdown.
+        """
         connection.sendJson({
             "message_name": "SHUTDOWN"
         })

@@ -6,16 +6,30 @@ import traceback
 
 class TCPConnection:
     def __init__(self, socket, client):
+        """
+        Initializes a TCP connection wrapper for the client.
+
+        Args:
+            socket (socket.socket): TCP socket object.
+            client (Client): Reference to the parent client.
+        """
         self.client = client
         self.socket = socket
         self.running = True
 
     def start(self):
+        """
+        Starts a background thread to listen for incoming messages.
+        """
         thread = Thread(target=self.listen)
         thread.daemon = True
         thread.start()
 
     def listen(self):
+        """
+        Continuously reads incoming TCP data, reconstructs messages,
+        and dispatches them to the client's CSProtocol handler.
+        """
         try:
             buffer = b""
             while True:
@@ -55,6 +69,13 @@ class TCPConnection:
             self.close()
 
     def sendJson(self, outgoing, payload=None):
+        """
+        Sends a JSON message over TCP, appending payload if required.
+
+        Args:
+            outgoing (dict): The message dictionary containing at least 'message_name' and 'data'.
+            payload (str, optional): Optional payload for message types like 'MSG'.
+        """
         # Payload is inside header... whoops
         message_name = outgoing.get("message_name")
         payload_messages = ["MSG"] # Add media stuff here later
@@ -73,7 +94,10 @@ class TCPConnection:
 
     
 
-    def close(self): 
+    def close(self):
+        """
+        Closes the TCP socket and marks the connection as stopped.
+        """ 
         self.running = False
         if hasattr(self, 'socket') and self.socket and not self.socket._closed:
             try:
