@@ -154,10 +154,13 @@ class Protocol:
     def handle_MSG(self, connection, message):
         message_name = message.get("message_name")
         data = message.get("data", {})
+        raw_chat_id = data.get("chat_id")
+        chat_id = raw_chat_id.strip() if isinstance(raw_chat_id, str) else raw_chat_id
+        from_user = connection.loggedInAs
 
         context = {
-            "from_user": data.get("from"),
-            "chat_id": data.get("chat_id"),
+            "from_user": from_user,
+            "chat_id": chat_id,
             "chat_type": data.get("chat_type"),
             "msg_id": data.get("msg_id", "unknown"),
             "timestamp": time.time(),

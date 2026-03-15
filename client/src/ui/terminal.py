@@ -198,7 +198,10 @@ class Terminal:
         print("-------------------------------------")
 
     def start_private_chat(self):
-        recipient = input("Who would you like to chat with?\n> ")
+        recipient = input("Who would you like to chat with?\n> ").strip()
+        if not recipient:
+            print("Please enter a valid username.")
+            return
         self.current_chat = recipient
         self.chatting_mode = True
                 
@@ -297,7 +300,10 @@ class Terminal:
         print(f"You rejected transfer {transfer_id}.") 
 
     def start_group_chat(self):
-        group = input("Which chat room would you like to enter?\n> ")
+        group = input("Which chat room would you like to enter?\n> ").strip()
+        if not group:
+            print("Please enter a valid group name.")
+            return
         self.current_chat = group
 
         self.chatting_mode = True

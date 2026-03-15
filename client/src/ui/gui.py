@@ -173,6 +173,9 @@ class GUI:
         # This method will be called when the user clicks the "Private Chat" button. It will prompt the user to enter the username of the person they want to chat with and then open a new chat window for that private conversation.
         recipient = simpledialog.askstring("Private Chat", "Enter username of the person you want to chat with:")
         # If the user cancels the prompt or leaves it empty, we simply return without doing anything. 
+        if recipient is None:
+            return
+        recipient = recipient.strip()
         if not recipient:
             return
         # Sets the current chat to the recipient's username and will open a new chat window for this private conversation. This is where sender types and receives messages from this specific user.
@@ -264,6 +267,9 @@ class GUI:
         # Similar to the start_private_chat method, this will be called when the user clicks the "Group Chat" button. It will prompt the user to enter the name of the group they want to chat in and then open a new chat window for that group conversation.
         group = simpledialog.askstring("Group Chat", "Enter group name you want to join:")
         # If the user cancels the prompt or leaves it empty, we simply return without doing anything.
+        if group is None:
+            return
+        group = group.strip()
         if not group:
             return
         # Sets the current chat to the group name and will open a new chat window for this group conversation. 
