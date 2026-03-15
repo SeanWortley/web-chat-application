@@ -12,26 +12,6 @@ from ..ui import GUI, Terminal
 
 class Client:
     def __init__(self, host, port, interface):
-        """
-        Initializes a client instance with server connection and UI interface.
-
-        Args:
-            host (str): Server hostname or IP.
-            port (int): Server port number.
-            interface (Interface): User interface object for input/output.
-
-        Attributes:
-            loggedInAs (str | None): Username of the logged-in user.
-            authenticated (bool): Whether the client has successfully authenticated.
-            running (bool): Whether the client is actively running.
-            command_queue (queue.Queue): Stores commands from user input.
-            socket (socket | None): TCP socket to the server.
-            connection (Connection | None): Wrapper for server connection.
-            cs_protocol (Protocol | None): Protocol handler for client-server communication.
-            p2p_protocol (Protocol | None): Protocol handler for peer-to-peer communication.
-            udp_connection (socket | None): Optional UDP socket for direct transfers.
-            pending_transfers (dict): Tracks ongoing file or media transfers.
-        """
         self.host = host
         self.port = port
         self.interface = interface
@@ -53,16 +33,9 @@ class Client:
         self.pending_transfers = {}
 
     def start(self):
-        """
-        Starts the client by connecting to the server in a background thread.
-        """
         threading.Thread(target=self._connect_and_run, daemon=True).start()
 
     def _connect_and_run(self):
-        """
-        Establishes TCP and P2P connections, initializes protocols, and
-        starts processing user commands.
-        """
         try:
             self.socket = socket(AF_INET, SOCK_STREAM)
             self.socket.connect((self.host, self.port))
@@ -83,19 +56,9 @@ class Client:
             print(f"Connection error: {e}")
 
     def queue_user_input(self, input_data):
-        """
-        Adds a user command to the command queue for processing.
-
-        Args:
-            input_data (dict): Command or message from the user interface.
-        """
         self.command_queue.put(input_data)
 
     def process_commands(self):
-        """
-        Continuously processes commands from the user input queue until
-        the client stops running.
-        """
         while self.running:
             try:
                 cmd = self.command_queue.get(timeout=0.1)
@@ -107,13 +70,6 @@ class Client:
                 break
 
     def _handle_user_input(self, input_data):
-        """
-        Dispatches a user input command to the appropriate client-server
-        or P2P protocol method.
-
-        Args:
-            input_data (dict): Contains message_name and data for processing.
-        """
         if not hasattr(self, 'cs_protocol') or self.cs_protocol is None:
             print("Protocol not ready, requeueing...")
             self.command_queue.put(input_data)
@@ -181,27 +137,15 @@ class Client:
                 print(f"Unknown command: {input_data}")
 
     def assign_db(self):
-        """
-        Assigns a database instance to the client and the interface.
-        """
         self.database = Database(self.loggedInAs)
         self.interface.database = self.database
 
     def unassign_db(self):
-        """
-        Removes the database assignment from the client and the interface.
-        """
         self.database = None
         self.interface.database = None
 
 
 def main():
-    """
-    Entry point for running the client application.
-
-    Parses command-line arguments, optionally cleans runtime files,
-    initializes the interface (GUI or terminal), and starts the client.
-    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", type=str, default="127.0.0.1")
     parser.add_argument("--port", type=int, default=12000)

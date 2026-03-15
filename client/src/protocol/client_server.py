@@ -4,12 +4,6 @@ from pathlib import Path
 
 class CSProtocol:
     def __init__(self, client):
-        """
-        Initializes the client-server protocol handler.
-
-        Args:
-            client (Client): Reference to the client instance using this protocol.
-        """
         self.client = client
         self.handlers = {
             "AUTH_OK": self.handle_AUTH_OK,
@@ -29,13 +23,7 @@ class CSProtocol:
         }
 
     def handleIncoming(self, connection, serverMessage):
-        """
-        Routes an incoming server message to the appropriate handler.
 
-        Args:
-            connection (TCPConnection): Active connection to the server.
-            serverMessage (dict): Parsed message received from the server.
-        """
         messageName = serverMessage["message_name"]
         handler = self.handlers.get(messageName)
         if handler:
@@ -46,9 +34,6 @@ class CSProtocol:
         self.client.interface.resume()
 
     def handle_AUTH_OK(self, connection, message):
-        """
-        Handles successful authentication and initializes the client session.
-        """
         self.client.interface.logged_in = True
         self.client.authenticated = True
         self.client.loggedInAs = message.get("from")
@@ -62,17 +47,11 @@ class CSProtocol:
         self.client.interface.resume()
     
     def handle_AUTH_FAIL(self, connection, message):
-        """
-        Handles failed authentication attempts and notifies the interface.
-        """
         self.client.interface.display(f"Failed to authenticate: {message["data"]["error_code"]}")
         self.client.interface.show_logged_out_menu()
         self.client.interface.resume()
 
     def handle_CREATE_ACCOUNT_OK(self, connection, message):
-        """
-        Handles successful account creation and initializes the user session.
-        """
         self.client.interface.display(message["data"]["welcome_message"])
         self.client.interface.logged_in = True
         self.client.loggedInAs = message.get("from")
@@ -86,18 +65,11 @@ class CSProtocol:
         
 
     def handle_CREATE_ACCOUNT_FAIL(self, connection, message):
-        """
-        Handles failed account creation attempts and notifies the interface.
-        """
         self.client.interface.display(message["data"]["error_message"])
         self.client.interface.show_logged_out_menu()
         self.client.interface.resume()
 
     def handle_LOGOUT_ACK(self, connection, message):
-        """
-        Processes server acknowledgment of a logout request and resets
-        the client session state.
-        """
         self.client.interface.display(message["data"]["goodbye_message"])
         self.client.authenticated = False
         self.client.loggedInAs = None
@@ -107,9 +79,6 @@ class CSProtocol:
         self.client.interface.resume()
 
     def handle_CREATE_GROUP_ACK(self, connection, message):
-        """
-        Handles server response for a group creation request.
-        """
         result =  message["data"]["result"]
         if result == "success":
             self.client.interface.display(f'Group creation successful!\n{message["data"]["message"]}')
@@ -118,9 +87,6 @@ class CSProtocol:
         self.client.interface.resume()
 
     def handle_JOIN_GROUP_ACK(self, connection, message):
-        """
-        Handles server response for a group joining request.
-        """
         result = message["data"]["result"]
         if result == "success":
             self.client.interface.display(f'Successfully joined this group!\n{message["data"]["message"]}')
@@ -129,9 +95,6 @@ class CSProtocol:
         self.client.interface.resume()
 
     def handle_GROUP_LIST_ACK(self, connection, message):
-        """
-        Displays the list of groups the user belongs to.
-        """
         result = message["data"]["result"]
         if result == "fail":
             self.client.interface.display(message["data"]["message"])
@@ -145,9 +108,6 @@ class CSProtocol:
         self.client.interface.resume()
 
     def AUTH(self, connection, username, hashed_pword):
-        """
-        Sends an authentication request to the server.
-        """
         connection.sendJson({
             "message_name": "AUTH",
             "data": {
@@ -157,9 +117,6 @@ class CSProtocol:
         })
 
     def CREATE_ACCOUNT(self, connection, username, hashed_pword):
-        """
-        Sends a request to create a new user account.
-        """
         connection.sendJson({
             "message_name": "CREATE_ACCOUNT",
             "data": {
@@ -169,17 +126,11 @@ class CSProtocol:
         })
 
     def LOGOUT(self, connection):
-        """
-        Sends a logout request to the server.
-        """
         connection.sendJson({
             "message_name": "LOGOUT"
         })
 
     def CREATE_GROUP(self, connection, group_name):
-        """
-        Sends a request to create a new group.
-        """
         connection.sendJson({
             "message_name": "CREATE_GROUP",
             "data":
@@ -189,9 +140,6 @@ class CSProtocol:
         })        
 
     def JOIN_GROUP(self, connection, group_name):
-        """
-        Sends a request to join an existing group.
-        """
         connection.sendJson({
             "message_name": "JOIN_GROUP",
             "data":
@@ -201,17 +149,11 @@ class CSProtocol:
         })
     
     def GROUP_LIST(self, connection):
-        """
-        Requests the list of groups the user belongs to.
-        """
         connection.sendJson({
             "message_name": "GROUP_LIST"
         })
 
     def MSG(self, connection, chat_id, chat_type, text):
-        """
-        Sends a chat message and stores it locally in the database.
-        """
         msg_id = str(uuid.uuid4())
         timestamp = time.time()
         
@@ -237,9 +179,8 @@ class CSProtocol:
 
         
     def MEDIA_OFFER(self, connection, chat_id, transfer_id, filepath, chat_type, sender_port):
-        """
-        Sends a media transfer offer to another client via the server.
-        """    
+
+    
         file_path = Path(filepath)
         filename = file_path.name
         filesize = file_path.stat().st_size
@@ -260,15 +201,9 @@ class CSProtocol:
         })
 
     def handle_incoming_media_offer(self, connection, message):
-        """
-        Handles an incoming media transfer offer.
-        """
         self.client.interface.handle_incoming_offer(message)
     
     def MEDIA_RESPONSE(self, connection, chat_id, chat_type, status, transfer_id, receiver_port):
-        """
-        Sends a response to a media transfer offer.
-        """
         connection.sendJson({
         "message_name": "MEDIA_RESPONSE",
         "data": {
@@ -282,10 +217,7 @@ class CSProtocol:
     })
     
     def handle_incoming_media_response(self, connection, message):
-        """
-        Handles responses to previously sent media offers and initiates
-        file transfer if accepted.
-        """
+
         data = message["data"]
 
         if data["status"].lower() != "accept":
@@ -314,9 +246,6 @@ class CSProtocol:
 
     
     def handle_MSG(self, connection, message):
-        """
-        Processes an incoming chat message and stores it locally.
-        """
         #print("Ekse, you have a new message coming through")
         data = message.get("data", {})
         from_user = data.get("from")
@@ -339,17 +268,11 @@ class CSProtocol:
         self.client.interface.process_msg(message, channel)
 
     def REQUEST_UNSENT_MESSAGES(self, connection):
-        """
-        Requests any messages missed while the client was offline.
-        """
         connection.sendJson({
             "message_name": "REQUEST_UNSENT_MESSAGES",
         })
     
     def handle_UNSENT_MESSAGES(self, connection, message):
-        """
-        Processes and stores messages received while the user was offline.
-        """
         groups = message["data"]["groups"]
         
         for chat_id, messages in groups.items():
@@ -381,10 +304,6 @@ class CSProtocol:
 
 
     def handle_MSG_NAK(self, connection, message):
-        """
-        Handles server rejection of a message and updates the interface
-        and local message logs accordingly.
-        """
         data = message.get("data")
         chat_id = data.get("chat_id")
         error_message = data.get("error_message")
@@ -409,9 +328,6 @@ class CSProtocol:
                 self.client.interface.display(error_message)
     
     def handle_SHUTDOWN(self, connection, message):
-        """
-        Handles a server shutdown command and forwards it to the client.
-        """
         self.client.command_queue.put({
             "message_name": "shutdown"
         })
