@@ -2,6 +2,7 @@ __pycache__/
 *.py[codz]
 *$py.class
 *.pyc
-*.db
-*.db-journal
-*.bin
+
+# Runtime data (generated at execution time)
+client/runtime/
+server/runtime/

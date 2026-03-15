@@ -1,6 +1,5 @@
 from threading import Thread, Event
 from hashlib import sha256
-from tokenize import group
 import queue
 import os
 import time
@@ -199,7 +198,10 @@ class Terminal:
         print("-------------------------------------")
 
     def start_private_chat(self):
-        recipient = input("Who would you like to chat with?\n> ")
+        recipient = input("Who would you like to chat with?\n> ").strip()
+        if not recipient:
+            print("Please enter a valid username.")
+            return
         self.current_chat = recipient
         self.chatting_mode = True
                 
@@ -298,7 +300,10 @@ class Terminal:
         print(f"You rejected transfer {transfer_id}.") 
 
     def start_group_chat(self):
-        group = input("Which chat room would you like to enter?\n> ")
+        group = input("Which chat room would you like to enter?\n> ").strip()
+        if not group:
+            print("Please enter a valid group name.")
+            return
         self.current_chat = group
 
         self.chatting_mode = True
@@ -457,24 +462,8 @@ class Terminal:
             "message_name": "GROUP_LIST"
         })
 
-    def leave_group(self):
-        group_name = input("Enter the name of the group you'd like to leave:\n> ")
-
-        self.on_user_input({
-            "message_name": "LEAVE_GROUP",
-            "data": {
-                "group_name": group_name
-            }
-        })
-
     def display(self, text): # Will have to be adapted once GUI is added.
         print(text)
-
-    def private_message(self):
-        recipient = input("Enter recipient username:\n> ")
-        message = input("Enter your message:\n> ")
-    
-        self.send_message(recipient, message)
 
     def send_media_offer(self, chat_id, filepath, chat_type):
 
@@ -567,22 +556,6 @@ class Terminal:
         if self.chatting_mode:
             print(">> ", end="", flush=True)
 
-    def send_message(self, recipient, message):
-        print(f"send_message called, logged_in={self.logged_in}")
-        if not self.logged_in:
-            print("You must be logged in first")
-            return
-            
-        self.on_user_input({
-            "message_name": "MSG",
-            "data": {
-                "chat_id": recipient,
-                "chat_type": "private",
-                "payload": message
-            }
-        })
-        print(f"Message sent to {recipient}")
-        
     def clear(self):
         os.system('cls' if os.name == 'nt' else 'clear')
 

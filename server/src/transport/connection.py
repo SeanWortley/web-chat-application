@@ -1,7 +1,6 @@
-from email import message
 import json
 from threading import Thread
-import sys
+
 
 class Connection:
     def __init__(self, socket, server):
@@ -14,7 +13,7 @@ class Connection:
     def start(self):
         thread = Thread(target=self.listen)
         thread.daemon = True
-        thread.start() 
+        thread.start()
 
     def listen(self):
         try:
@@ -28,7 +27,7 @@ class Connection:
 
                 header, buffer = buffer.split(b"\n", 1)
                 message = json.loads(header.decode("utf-8"))
-                
+
                 if "length" in message:
                     length = message.get("length")
                     while len(buffer) < length:
@@ -36,17 +35,17 @@ class Connection:
                         if not chunk:
                             return
                         buffer += chunk
-                    
+
                     body = buffer[:length]
                     buffer = buffer[length:]
 
                     msg_name = message.get("message_name")
-                    payload_messages = ["MSG"] # Add media stuff here later
+                    payload_messages = ["MSG"]
                     if msg_name in payload_messages:
                         if msg_name == "MSG":
                             message["data"]["payload"] = body.decode("utf-8")
                         else:
-                            message["data"]["payload"] = body  # raw bytes for media
+                            message["data"]["payload"] = body
 
                 self.server.log_incoming(message)
                 self.server.protocol.handleIncoming(self, message)
@@ -59,11 +58,10 @@ class Connection:
             self.close()
 
     def sendJson(self, outgoing, payload=None):
-        # Payload is inside header... whoops
         message_name = outgoing.get("message_name")
-        payload_messages = ["MSG"] # Add media stuff here later
+        payload_messages = ["MSG"]
 
-        if (message_name in payload_messages):
+        if message_name in payload_messages:
             data = outgoing.get("data")
             payload = data.pop("payload")
 
@@ -80,8 +78,7 @@ class Connection:
         if hasattr(self, 'socket') and self.socket and not self.socket._closed:
             try:
                 self.socket.close()
-            except:
+            except Exception:
                 pass
         if self in self.server.connections:
             self.server.connections.remove(self)
-

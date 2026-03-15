@@ -5,8 +5,6 @@ client side database
 Handle mutliple chats
 user account creation
 
-
-
 Messages to do:
 
 AUTH
@@ -136,7 +134,7 @@ Server informs the client of an invalid message.
 
 OFFLINE_ERROR_RESPONSE
 CONTROL
-error_code, error_message,  recipient
+error_code, error_message, recipient
 Server informs the sender that they attempted to share a media file with an offline person.
 
 UNSUPPORTED_FILETYPE_RESPONSE
@@ -144,3 +142,19 @@ CONTROL
 error_code, error_message, file_type
 Server informs the sender that they attempted to share an unsupported media file.
 
+Run from project root
+
+Server:
+python3 server/main.py --host 127.0.0.1 --port 12000
+
+Server clean runtime DB only:
+python3 server/main.py --clean
+
+Client (GUI):
+python3 client/main.py --host 127.0.0.1 --port 12000
+
+Client (Terminal):
+python3 client/main.py --host 127.0.0.1 --port 12000 --terminal
+
+Client clean runtime DB only:
+python3 client/main.py --clean

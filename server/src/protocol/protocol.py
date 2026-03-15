@@ -1,4 +1,3 @@
-from tabnanny import verbose
 import threading
 import time
 
@@ -6,12 +5,12 @@ import time
 class Protocol:
     def __init__(self, server):
         self.server = server
-        self.pending_offers = {} #
+        self.pending_offers = {}
         self.lock = threading.Lock()
         self.handlers = {
             "AUTH": self.handle_AUTH,
             "CREATE_ACCOUNT": self.handle_CREATE_ACCOUNT,
-            "LOGOUT": self.handle_LOGOUT,  
+            "LOGOUT": self.handle_LOGOUT,
             "MSG": self.handle_MSG,
             "CREATE_GROUP": self.handle_CREATE_GROUP,
             "JOIN_GROUP": self.handle_JOIN_GROUP,
@@ -20,14 +19,14 @@ class Protocol:
             "MEDIA_OFFER": self.handle_MSG,
             "MEDIA_RESPONSE": self.handle_MSG
         }
-    
+
     def handleIncoming(self, connection, clientMessage):
         messageName = clientMessage["message_name"]
         handler = self.handlers.get(messageName)
         if handler:
             handler(connection, clientMessage)
-        else: 
-            self.server.log(f"Unknown message: {clientMessage["message_name"]}")
+        else:
+            self.server.log(f"Unknown message: {clientMessage['message_name']}")
 
     def handle_AUTH(self, connection, message):
         username = message["data"]["username"]
@@ -35,8 +34,8 @@ class Protocol:
 
         user = self.server.database.get_user(username)
         if username in self.server.active_users:
-            self.AUTH_FAIL(connection, "This user is already logged in!")        
-        elif (user and hashed_pword == user["hashed_password"]):
+            self.AUTH_FAIL(connection, "This user is already logged in!")
+        elif user and hashed_pword == user["hashed_password"]:
             connection.authenticated = True
             connection.loggedInAs = username
             self.server.active_users.append(username)
@@ -49,7 +48,7 @@ class Protocol:
         hashed_pword = message["data"]["hashed_password"]
 
         user = self.server.database.get_user(username)
-        if (not user):
+        if not user:
             self.server.database.create_user(username, hashed_pword)
             connection.authenticated = True
             connection.loggedInAs = username
@@ -68,18 +67,18 @@ class Protocol:
     def handle_REQUEST_UNSENT_MESSAGES(self, connection, message):
         if not connection.authenticated:
             return
-        
+
         username = connection.loggedInAs
         messages = self.server.database.get_offline_messages(username)
 
         if not messages:
             return
-        
+
         groups = {}
 
         for row in messages:
             key = row["group_id"] if row["chat_type"] == "group" else row["sender"]
-            
+
             if key not in groups:
                 groups[key] = []
             groups[key].append({
@@ -89,11 +88,11 @@ class Protocol:
                 "content": row["msg_text"],
                 "timestamp": row["timestamp"]
             })
-            
+
         self.UNSENT_MESSAGES(connection, groups)
 
         self.server.database.delete_offline_messages(username)
-    
+
     def UNSENT_MESSAGES(self, connection, groups):
         connection.sendJson({
             "message_name": "UNSENT_MESSAGES",
@@ -103,17 +102,16 @@ class Protocol:
         })
 
     def AUTH_OK(self, connection):
-        welcome_message = f'Welcome back, {connection.loggedInAs}!'
+        welcome_message = f"Welcome back, {connection.loggedInAs}!"
 
         connection.sendJson({
-            "message_name": "AUTH_OK", 
+            "message_name": "AUTH_OK",
             "from": connection.loggedInAs,
             "data": {
                 "welcome_message": welcome_message}
-                })
+        })
 
     def AUTH_FAIL(self, connection, error_message):
-        error_message = error_message
         connection.sendJson({
             "message_name": "AUTH_FAIL",
             "data": {
@@ -125,7 +123,7 @@ class Protocol:
 
         connection.sendJson({
             "message_name": "CREATE_ACCOUNT_OK",
-            "from": connection.loggedInAs, 
+            "from": connection.loggedInAs,
             "data": {
                 "welcome_message": welcome_message}
         })
@@ -150,46 +148,36 @@ class Protocol:
             "message_name": "LOGOUT_ACK",
             "data": {
                 "goodbye_message": goodbye_message
-                }
+            }
         })
 
     def handle_MSG(self, connection, message):
-        """
-        Handles all incoming messages (private or group) and routes
-        them to the correct handler based on message type.
-        """
-
-        # Safely parse message data
         message_name = message.get("message_name")
         data = message.get("data", {})
+        raw_chat_id = data.get("chat_id")
+        chat_id = raw_chat_id.strip() if isinstance(raw_chat_id, str) else raw_chat_id
+        from_user = connection.loggedInAs
 
-        # Build a unified context for routing
         context = {
-            # Core info
-            "from_user": data.get("from"),
-            "chat_id": data.get("chat_id"),  # username or group name
+            "source_conn": connection,
+            "from_user": from_user,
+            "chat_id": chat_id,
             "chat_type": data.get("chat_type"),
-
-            # Text message fields
             "msg_id": data.get("msg_id", "unknown"),
             "timestamp": time.time(),
             "payload": data.get("payload", ""),
-
-            # Media message fields
             "transfer_id": data.get("transfer_id"),
             "filename": data.get("filename"),
             "filesize": data.get("filesize"),
             "sender_port": data.get("sender_port"),
-            "status": data.get("status"),           
-            "receiver_port": data.get("receiver_port") 
+            "status": data.get("status"),
+            "receiver_port": data.get("receiver_port")
         }
 
         if not connection.authenticated:
             self.MSG_NAK(connection, context.get("chat_id"), "User isn't authenticated")
             return
 
-
-        # Handle private messages
         if context["chat_type"] == "private":
             recipient = context["chat_id"]
             if recipient == context.get("from_user"):
@@ -199,7 +187,7 @@ class Protocol:
                 self.MSG_NAK(connection, context.get("chat_id"), "Recipient doesn't exist")
                 return
             recipient_conn = self.get_user_connection(recipient)
-            
+
             context.update({
                 "target_conn": recipient_conn,
                 "recipient": recipient,
@@ -208,11 +196,9 @@ class Protocol:
 
             self.route_message(message_name, context)
 
-        # Handle group messages
         elif context["chat_type"] == "group":
             group_name = context["chat_id"]
 
-            # Validate group and membership
             if not self.server.database.get_group(group_name):
                 self.MSG_NAK(connection, context.get("chat_id"), "Group doesn't exist")
                 return
@@ -221,7 +207,6 @@ class Protocol:
                 self.MSG_NAK(connection, context.get("chat_id"), "You're not in this group")
                 return
 
-            # Send to all members except sender
             members = self.server.database.get_group_members(group_name)
             for row in members:
                 member = row["username"]
@@ -237,7 +222,7 @@ class Protocol:
                 })
 
                 self.route_message(message_name, group_context)
-                
+
     def route_message(self, message_name, context):
         if message_name.startswith("MEDIA_"):
             self.handle_media_message(message_name, context)
@@ -245,19 +230,25 @@ class Protocol:
             self.handle_text_message(message_name, context)
 
     def handle_media_message(self, message_name, ctx):
-
         target_conn = ctx["target_conn"]
 
         if message_name == "MEDIA_OFFER":
-            # Store it regardless on online status
+            if ctx["chat_type"] == "private" and not target_conn:
+                self.MSG_NAK(
+                    ctx["source_conn"],
+                    ctx["chat_id"],
+                    "Recipient is offline"
+                )
+                return
+
             self.add_offer(
                 transfer_id=ctx["transfer_id"],
                 sender=ctx["from_user"],
                 sender_port=ctx["sender_port"],
-                recipient=ctx["chat_id"])
-        
-            if target_conn:
+                recipient=ctx["chat_id"]
+            )
 
+            if target_conn:
                 print(f"handle_MSG: from={ctx['from_user']}, chat_id={ctx['chat_id']}, chat_type={ctx['chat_type']}, target_conn={target_conn}")
 
                 self.forward_MEDIA_OFFER(
@@ -270,52 +261,40 @@ class Protocol:
                     ctx["filesize"],
                     ctx["sender_port"]
                 )
-            else:
-                pass
 
         elif message_name == "MEDIA_RESPONSE":
-                transfer_id = ctx.get("transfer_id")
-                with self.lock:
-                    offer = self.pending_offers.get(transfer_id)
-                    if offer:
-                        responder = ctx["from_user"]
-                        if responder not in offer['responders']:
-                            offer['responders'].add(responder)
-                            # Forward response to the original sender
-                            sender_conn = self.get_user_connection(offer['sender'])
-                            if sender_conn:
-                                self.forward_MEDIA_RESPONSE(
-                                    sender_conn,
-                                    offer['sender'],
-                                    responder,
-                                    ctx["status"],
-                                    transfer_id,
-                                    ctx.get("receiver_port")
-                                )
-                        # else: duplicate response, ignore silently
-                    else:
-                        print(f"No offer found for transfer_id {transfer_id}")
+            transfer_id = ctx.get("transfer_id")
+            with self.lock:
+                offer = self.pending_offers.get(transfer_id)
+                if offer:
+                    responder = ctx["from_user"]
+                    if responder not in offer['responders']:
+                        offer['responders'].add(responder)
+                        sender_conn = self.get_user_connection(offer['sender'])
+                        if sender_conn:
+                            self.forward_MEDIA_RESPONSE(
+                                sender_conn,
+                                offer['sender'],
+                                responder,
+                                ctx["status"],
+                                transfer_id,
+                                ctx.get("receiver_port")
+                            )
+                else:
+                    print(f"No offer found for transfer_id {transfer_id}")
 
     def add_offer(self, transfer_id, sender, sender_port, recipient):
-            """Store an offer"""
-            with self.lock:
-                self.pending_offers[transfer_id] = {
-                    'sender': sender,
-                    'sender_port': sender_port,
-                    'recipient': recipient,
-                    'responders': set(),    # track who has responded(specifically for groups)
-                    'timestamp': time.time()
-                }
-            print(f"Added offer {transfer_id}")
-
-    def get_and_remove(self, transfer_id):
-        """Get an offer and remove it (atomic)"""
         with self.lock:
-            return self.pending_offers.pop(transfer_id, None)
-
+            self.pending_offers[transfer_id] = {
+                'sender': sender,
+                'sender_port': sender_port,
+                'recipient': recipient,
+                'responders': set(),
+                'timestamp': time.time()
+            }
+        print(f"Added offer {transfer_id}")
 
     def handle_text_message(self, message_name, ctx):
-
         target_conn = ctx["target_conn"]
 
         if target_conn and message_name == "MSG":
@@ -340,26 +319,21 @@ class Protocol:
                 ctx["group_name"],
                 ctx["payload"],
                 ctx["timestamp"]
-            ) 
-
+            )
 
     def handle_CREATE_GROUP(self, connection, message):
-        #self.server.log(f"handle_CREATE_GROUP called with: {message}")
         if not connection.authenticated:
             self.CREATE_GROUP_ACK(connection, "fail", "You aren't logged in")
+            return
 
         group_name = message["data"]["group_name"]
         username = connection.loggedInAs
-        
-        #to avoid duplicate group(names)
+
         if self.server.database.get_group(group_name):
             self.CREATE_GROUP_ACK(connection, "fail", "Group already exists")
             return
-        
-        self.server.database.create_group(group_name, username)
-        #self.server.log(f"Group '{group_name}' created by {username}")
 
-        # This group will be added to the list of the user's groups their in
+        self.server.database.create_group(group_name, username)
         self.CREATE_GROUP_ACK(connection, "success", f"Group '{group_name}' created!")
 
     def handle_JOIN_GROUP(self, connection, message):
@@ -374,17 +348,16 @@ class Protocol:
             self.JOIN_GROUP_ACK(connection, "fail", "Group does not exist")
             return
 
-        if self.server.database.is_group_member(group_name, username):   
+        if self.server.database.is_group_member(group_name, username):
             self.JOIN_GROUP_ACK(connection, "fail", f"Already in group {group_name}")
             return
 
         self.server.database.add_group_member(group_name, username)
-        #self.server.log(f"{username} joined '{group_name}'")
         self.JOIN_GROUP_ACK(connection, "success", f"You joined '{group_name}'")
 
     def handle_GROUP_LIST(self, connection, message):
         if not connection.authenticated:
-            self.GROUP_LIST_ACK(connection, "fail", [], f"You aren't logged in")
+            self.GROUP_LIST_ACK(connection, "fail", [], "You aren't logged in")
             return
 
         username = connection.loggedInAs
@@ -421,40 +394,34 @@ class Protocol:
             }
         })
 
-    def LEAVE_GROUP_ACK(self, connection, result, message):
-        connection.sendJson({
-            "message_name": "LEAVE_GROUP_ACK",
-            "data": {
-                "result": result,
-                "message": message
-            }
-        })
     def get_user_connection(self, username):
-        ##will ID the user with their username, therefore for the message sending we the different users' terminals can operate correctly identifying these
         for conn in self.server.connections:
             if conn.loggedInAs == username and conn.authenticated:
                 return conn
         return None
 
     def forward_MEDIA_OFFER(self, recipient_conn, from_user, chat_id, chat_type, transfer_id, filename, filesize, sender_port):
-            media_offer_sender_conn = self.get_user_connection(from_user)
-            if not media_offer_sender_conn:
-                self.server.log(f"MEDIA_OFFER skipped: sender connection not found for '{from_user}'")
-                return
-            md_offer_sender_ip = media_offer_sender_conn.socket.getpeername()[0]
-            recipient_conn.sendJson({
-                "message_name": "MEDIA_OFFER",
-                "data": {
+        media_offer_sender_conn = self.get_user_connection(from_user)
+        if not media_offer_sender_conn:
+            self.server.log(f"MEDIA_OFFER skipped: sender connection not found for '{from_user}'")
+            return
+        md_offer_sender_ip = media_offer_sender_conn.socket.getpeername()[0]
+
+        routed_chat_id = from_user if chat_type == "private" else chat_id
+
+        recipient_conn.sendJson({
+            "message_name": "MEDIA_OFFER",
+            "data": {
                 "from": from_user,
-                "chat_id": chat_id,
+                "chat_id": routed_chat_id,
                 "chat_type": chat_type,
                 "transfer_id": transfer_id,
                 "filename": filename,
                 "filesize": filesize,
                 "sender_port": sender_port,
                 "sender_ip": md_offer_sender_ip
-                }
-            })
+            }
+        })
 
     def forward_MEDIA_RESPONSE(self, recipient_conn, to_user, from_user, status, transfer_id, receiver_port):
         media_response_sender_conn = self.get_user_connection(from_user)
@@ -466,17 +433,16 @@ class Protocol:
             "message_name": "MEDIA_RESPONSE",
             "data": {
                 "from": from_user,
-                "to": to_user,  
+                "to": to_user,
                 "status": status,
                 "transfer_id": transfer_id,
                 "receiver_port": receiver_port,
                 "receiver_ip": md_response_sender_ip
             }
         })
-        
+
     def forward_message(self, recipient_conn, from_user, chat_id, chat_type, msg_id, timestamp, payload):
-            #forarding of the message to correct recepient
-            recipient_conn.sendJson({
+        recipient_conn.sendJson({
             "message_name": "MSG",
             "type": "DATA",
             "data": {
@@ -487,18 +453,18 @@ class Protocol:
                 "timestamp": timestamp,
                 "payload": payload
             }
-    })
-    
+        })
+
     def MSG_NAK(self, connection, chat_id, error_message):
-            connection.sendJson({
-                "message_name": "MSG_NAK",
-                "data": {
-                    "chat_id": chat_id,
-                    "error_message": error_message
-                }
-            })
-    
+        connection.sendJson({
+            "message_name": "MSG_NAK",
+            "data": {
+                "chat_id": chat_id,
+                "error_message": error_message
+            }
+        })
+
     def SHUTDOWN(self, connection):
         connection.sendJson({
-                    "message_name": "SHUTDOWN"
-                })
+            "message_name": "SHUTDOWN"
+        })
