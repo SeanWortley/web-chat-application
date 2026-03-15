@@ -4,18 +4,18 @@
 ### Default Localhost:
 python3 server/main.py
 
-### Specify ip and port
+### Specify Ip And Port
 python3 server/main.py --host {hostip} --port {hostport}
 
-### Server clean runtime DB (Does not start server):
+### Server Clean Runtime DB (Does Not Start Server):
 python3 server/main.py --clean
 
 ## Client:
-### Default Localhost and GUI:
+### Default Localhost And GUI:
 python3 client/main.py
 
-### Specify ip, port and/or terminal:
+### Specify Ip, Port And/Or Terminal:
 python3 client/main.py --host {hostip} --port {hostport} --terminal
 
-### Client clean runtime DB and any temp .bin files (left behind if media transfer is cut midway, does not start client):
+### Client Clean Runtime DB And Any Temp .bin Files:
 python3 client/main.py --clean
