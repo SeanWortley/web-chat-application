@@ -8,8 +8,10 @@ import uuid
 from pathlib import Path
 
 class Terminal:
+    """Terminal-based user interface for interacting with the chat client."""
 
     def __init__(self):
+        """Initializes terminal state, command mappings, and chat session data."""
         self.commands = {
             "/help": self.displayHelp,
             "/login": self.login,
@@ -30,12 +32,14 @@ class Terminal:
         self.current_chat = None # Is either 'from' or 'group_name' depending on chat type
 
     def start(self):
+        """Starts the terminal UI and launches the input loop thread."""
         print("Welcome to the terminal interface for our chat application!")
         print("To get started, type '/login', '/register', or '/help' for a list of commands.")
         self.show_logged_out_menu()
         Thread(target=self.input_loop).start()
 
     def input_loop(self):
+        """Continuously reads user commands and dispatches terminal actions."""
         while self.running:
             text = input("> ").strip()
 
@@ -92,6 +96,12 @@ class Terminal:
                     print("Invalid command. Try /help")
 
     def process_unsent_batch(self, groups):
+        """
+        Queues a batch of unread messages retrieved from the server.
+
+        Args:
+            groups (dict): Offline messages grouped by chat identifier.
+        """
         for chat_id, messages in groups.items():
             num = len(messages)
             print(f"\n[{num}] UNREAD MESSAGE(S) FROM {chat_id.upper()}")
@@ -110,6 +120,13 @@ class Terminal:
                 self.queue_msg(standard_form)
 
     def process_msg(self, message, channel):
+        """
+        Processes an incoming message for either immediate print or unread queueing.
+
+        Args:
+            message (dict): Incoming message payload.
+            channel (str): Conversation key the message belongs to.
+        """
         if channel != self.current_chat:
             self.queue_msg(message)
             self.notify_msg(message)
@@ -120,6 +137,7 @@ class Terminal:
 
 
     def process_unread_in_current_chat(self):
+        """Prints and clears unread messages for the currently active chat."""
         if self.current_chat not in self.unread_messages:
             return
         
@@ -131,6 +149,12 @@ class Terminal:
 
 
     def queue_msg(self, message):
+        """
+        Adds a message to the unread queue for its chat.
+
+        Args:
+            message (dict): Message payload to queue.
+        """
         data = message.get("data")
         from_user = data.get("from")
         chat_type = data.get("chat_type")
@@ -152,6 +176,12 @@ class Terminal:
 
         
     def notify_msg(self, message):
+        """
+        Prints a new-message notification when the message is not in focus.
+
+        Args:
+            message (dict): Incoming message payload.
+        """
         data = message.get("data")
         from_user = data.get("from")
         chat_type = data.get("chat_type")
@@ -172,6 +202,13 @@ class Terminal:
 
     
     def print_msg(self, message, is_unread=False):
+        """
+        Prints a chat message in terminal format.
+
+        Args:
+            message (dict): Message payload to display.
+            is_unread (bool): Whether this message is printed from unread backlog.
+        """
         data = message.get("data")
         from_user = data.get("from")
         if is_unread:
@@ -180,6 +217,12 @@ class Terminal:
             print(f'\n{from_user}: {data.get("payload")}\n>> ', end="")
 
     def load_private_logs(self, chat_id):
+        """
+        Loads and prints stored private chat history for a recipient.
+
+        Args:
+            chat_id (str): Private chat partner username.
+        """
         logs = self.database.get_chat_history(chat_id, "private")
         for message in logs:
             from_user = message.get("from_user")
@@ -189,6 +232,12 @@ class Terminal:
         print("-------------------------------------")
         
     def load_group_logs(self, chat_id):
+        """
+        Loads and prints stored group chat history for a group.
+
+        Args:
+            chat_id (str): Group name.
+        """
         logs = self.database.get_chat_history(chat_id, "group")
         for message in logs:
             from_user = message.get("from_user")
@@ -198,6 +247,7 @@ class Terminal:
         print("-------------------------------------")
 
     def start_private_chat(self):
+        """Starts an interactive private chat session in the terminal."""
         recipient = input("Who would you like to chat with?\n> ").strip()
         if not recipient:
             print("Please enter a valid username.")
@@ -256,6 +306,12 @@ class Terminal:
             self.show_logged_in_menu()
 
     def accept_transfer(self, transfer_id):
+        """
+        Accepts a pending incoming file transfer offer.
+
+        Args:
+            transfer_id (int): Transfer identifier to accept.
+        """
         if transfer_id not in self.pending_incoming:
             print(f"No pending offer with ID {transfer_id}")
             return
@@ -280,6 +336,12 @@ class Terminal:
 
 
     def reject_transfer(self, transfer_id):
+        """
+        Rejects a pending incoming file transfer offer.
+
+        Args:
+            transfer_id (int): Transfer identifier to reject.
+        """
         if transfer_id not in self.pending_incoming:
             print(f"No pending offer with ID {transfer_id}")
             return
@@ -300,6 +362,7 @@ class Terminal:
         print(f"You rejected transfer {transfer_id}.") 
 
     def start_group_chat(self):
+        """Starts an interactive group chat session in the terminal."""
         group = input("Which chat room would you like to enter?\n> ").strip()
         if not group:
             print("Please enter a valid group name.")
@@ -357,9 +420,11 @@ class Terminal:
             self.show_logged_in_menu()
     
     def resume(self):
+        """Unblocks any command waiting on a server response."""
         self.wait_event.set()
     
     def displayHelp(self):
+        """Displays available terminal commands and menu options."""
         print("=== MAIN MENU ===")
         print("/login")
         print("/register")
@@ -374,6 +439,7 @@ class Terminal:
         self.resume()
 
     def show_logged_out_menu(self):
+        """Renders the logged-out terminal menu."""
         self.clear()
         print("=== MAIN MENU ===")
         print("/login")
@@ -382,6 +448,7 @@ class Terminal:
         print("/quit")
 
     def show_logged_in_menu(self):
+        """Renders the logged-in chat menu."""
         self.clear()
         print("=== CHAT MENU ===")
         print("1. Enter Private Chat")
@@ -391,6 +458,7 @@ class Terminal:
         print("5. Join Group")
 
     def login(self):
+        """Prompts for credentials and sends an authentication request."""
         username = input("Enter your username:\n> ")
         hashed_pword = (sha256(input("Enter your password:\n> ").encode())).hexdigest()
         
@@ -403,6 +471,7 @@ class Terminal:
         })
 
     def register(self):
+        """Prompts for credentials and sends an account creation request."""
         username = input("Enter your desired username:\n> ")
         hashed_pword = (sha256(input("Enter your desired password:\n> ").encode())).hexdigest()
 
@@ -415,6 +484,7 @@ class Terminal:
         })
         
     def logout(self):
+        """Logs out the current user if authenticated."""
         if self.logged_in:
             self.on_user_input({
                 "message_name": "LOGOUT"
@@ -424,6 +494,7 @@ class Terminal:
             self.resume()
 
     def quit(self):
+        """Shuts down the terminal interface and exits the process."""
         self.running = False
         self.logout()
         self.on_user_input({
@@ -436,6 +507,7 @@ class Terminal:
         sys.exit()
 
     def create_group(self):
+        """Prompts for a group name and requests group creation."""
         group_name = input("Enter your desired group name:\n> ")
         
         # Pass message to client.py
@@ -447,6 +519,7 @@ class Terminal:
         })
     
     def join_group(self):
+        """Prompts for a group name and requests to join it."""
         group_name = input("Enter the name of the group you'd like to join:\n> ")
         
         # Pass message to client.py
@@ -458,14 +531,29 @@ class Terminal:
         })
 
     def view_groups(self):
+        """Requests a list of groups for the current user."""
         self.on_user_input({
             "message_name": "GROUP_LIST"
         })
 
     def display(self, text): # Will have to be adapted once GUI is added.
+        """
+        Displays generic output text in the terminal.
+
+        Args:
+            text (str): Text to print.
+        """
         print(text)
 
     def send_media_offer(self, chat_id, filepath, chat_type):
+        """
+        Sends a media transfer offer after validating file path.
+
+        Args:
+            chat_id (str): Target user or group name.
+            filepath (str): Path to the file being offered.
+            chat_type (str): Either "private" or "group".
+        """
 
         filepath = filepath.strip().strip('"\'') 
         if not os.path.exists(filepath):
@@ -533,6 +621,12 @@ class Terminal:
 
 
     def handle_incoming_offer(self, message):
+        """
+        Stores and displays a newly received media transfer offer.
+
+        Args:
+            message (dict): Incoming MEDIA_OFFER message.
+        """
         data = message.get("data", {})
         transfer_id = data.get("transfer_id")
         if not transfer_id:
@@ -557,26 +651,39 @@ class Terminal:
             print(">> ", end="", flush=True)
 
     def clear(self):
+        """Clears the terminal screen on the current operating system."""
         os.system('cls' if os.name == 'nt' else 'clear')
 
     def print_current(self):
+        """Prints the currently active chat identifier."""
         print(f"Chatting with {self.current_chat}")
 
     def process_self_message(self):
+        """Displays feedback for attempts to message yourself."""
         print("\nYou can't message yourself! Please exit the chat.\n>>", end="")
 
     def process_incorrect_recipient(self):
+        """Displays feedback for private messages to unknown users."""
         print("\nThis user does not exist! Please exit the chat.\n>>", end="")
 
     def process_incorrect_group(self):
+        """Displays feedback for messages sent to unknown groups."""
         print("\nThis group not exist! Please exit the chat.\n>>", end="")
 
     def process_not_group_member(self):
+        """Displays feedback when user is not a member of the target group."""
         print("\nYou are not a member of this group! Please exit the chat.\n>>", end="")
     
     def process_shutdown(self):
+        """Handles server shutdown notification and exits the terminal client."""
         print("\nServer has shut down. Press Enter to exit.")
         self.quit()
 
     def on_file_received(self, filepath):
+        """
+        Displays completion status for an incoming UDP file transfer.
+
+        Args:
+            filepath (str): Local file path of the received file.
+        """
         print(f"[UDP] Transfer complete -> {filepath}")
