@@ -5,8 +5,6 @@ import struct
 class UDPConnection:
     """Manages UDP socket lifecycle for peer-to-peer transfers."""
 
-    NACK = 3
-
     def __init__(self, client):
         """
         Initializes a UDP connection for P2P transfers.
@@ -56,19 +54,6 @@ class UDPConnection:
         if self.socket:
             self.socket.close()
         #print("[UDP] Stopped")
-
-    def retransmit(self, transfer_id, chunk_index, peer_ip, peer_port):
-        """
-        Sends a NACK packet to request retransmission of a specific chunk.
-
-        Args:
-            transfer_id (int): Unique ID of the transfer.
-            chunk_index (int): Index of the chunk to retransmit.
-            peer_ip (str): Recipient IP address.
-            peer_port (int): Recipient port number.
-        """
-        packet = struct.pack("!BIIB", self.NACK, transfer_id, chunk_index, 0)
-        self.socket.sendto(packet, (peer_ip, peer_port))
 
     def send(self, data, address):
         """

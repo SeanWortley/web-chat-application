@@ -79,7 +79,11 @@ class Terminal:
                 elif text.startswith("/accept"):
                     parts = text.split()
                     if len(parts) == 2:
-                        transfer_id = int(parts[1])
+                        try:
+                            transfer_id = int(parts[1])
+                        except ValueError:
+                            print("Usage: /accept <transfer_id>")
+                            continue
                         self.accept_transfer(transfer_id)
                     else:
                         print("Usage: /accept <transfer_id>")
@@ -87,7 +91,11 @@ class Terminal:
                 elif text.startswith("/reject"):
                     parts = text.split()
                     if len(parts) == 2:
-                        transfer_id = int(parts[1])
+                        try:
+                            transfer_id = int(parts[1])
+                        except ValueError:
+                            print("Usage: /reject <transfer_id>")
+                            continue
                         self.reject_transfer(transfer_id)
                     else:
                         print("Usage: /reject <transfer_id>")
@@ -277,7 +285,12 @@ class Terminal:
             elif text.startswith("/accept"):
                 parts = text.split()
                 if len(parts) == 2:
-                    transfer_id = int(parts[1])
+                    try:
+                        transfer_id = int(parts[1])
+                    except ValueError:
+                        print("Usage: /accept <transfer_id>")
+                        text = input(">> ")
+                        continue
                     self.accept_transfer(transfer_id)
                 else:
                     print("Usage: /accept <transfer_id>")
@@ -285,7 +298,12 @@ class Terminal:
             elif text.startswith("/reject"):
                 parts = text.split()
                 if len(parts) == 2:
-                    transfer_id = int(parts[1])
+                    try:
+                        transfer_id = int(parts[1])
+                    except ValueError:
+                        print("Usage: /reject <transfer_id>")
+                        text = input(">> ")
+                        continue
                     self.reject_transfer(transfer_id)
                 else:
                     print("Usage: /reject <transfer_id>")
@@ -387,12 +405,17 @@ class Terminal:
                     filepath = input("Enter filepath:\n> ").strip('')
                 else:
                     filepath = parts[1].strip('')
-                    self.send_media_offer(group, filepath, chat_type="group")
+                self.send_media_offer(group, filepath, chat_type="group")
             
             elif text.startswith("/accept"):
                 parts = text.split()
                 if len(parts) == 2:
-                    transfer_id = int(parts[1])
+                    try:
+                        transfer_id = int(parts[1])
+                    except ValueError:
+                        print("Usage: /accept <transfer_id>")
+                        text = input(">> ")
+                        continue
                     self.accept_transfer(transfer_id)
                 else:
                     print("Usage: /accept <transfer_id>")
@@ -400,7 +423,12 @@ class Terminal:
             elif text.startswith("/reject"):
                 parts = text.split()
                 if len(parts) == 2:
-                    transfer_id = int(parts[1])
+                    try:
+                        transfer_id = int(parts[1])
+                    except ValueError:
+                        print("Usage: /reject <transfer_id>")
+                        text = input(">> ")
+                        continue
                     self.reject_transfer(transfer_id)
                 else:
                     print("Usage: /reject <transfer_id>")

@@ -105,7 +105,7 @@ class GUI:
         frame = tk.Frame(self.root, padx=30, pady=30)
         frame.pack(expand=True)
         
-        tk.Label(frame, text="Welcome To Our Web Chat Application", font=("Helvetica", 16)).pack(pady=10)
+        tk.Label(frame, text="Welcome :)\nPlease Log In Or Register To Start Chatting.", font=("Helvetica", 16)).pack(pady=10)
         
         tk.Label(frame, text="Username:").pack()
         self.login_username = tk.Entry(frame, width=30)
@@ -119,7 +119,7 @@ class GUI:
         btn_frame = tk.Frame(frame)
         btn_frame.pack(pady=10)
         
-        tk.Button(btn_frame, text="Login", command=self.login, width=10).pack(side=tk.LEFT, padx=5)
+        tk.Button(btn_frame, text="Log In", command=self.login, width=10).pack(side=tk.LEFT, padx=5)
         tk.Button(btn_frame, text="Register", command=self.register, width=10).pack(side=tk.LEFT, padx=5)
     
     def show_main_menu(self):
