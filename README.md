@@ -1,4 +1,4 @@
-#Run from project root
+# Run from project root
 
 ##Server:
 ###Default Localhost:
