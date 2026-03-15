@@ -87,7 +87,7 @@ class CSProtocol:
 
     def handle_CREATE_ACCOUNT_FAIL(self, connection, message):
         """
-        Handles failed account creation attempts.
+        Handles failed account creation attempts and notifies the interface.
         """
         self.client.interface.display(message["data"]["error_message"])
         self.client.interface.show_logged_out_menu()
@@ -119,7 +119,7 @@ class CSProtocol:
 
     def handle_JOIN_GROUP_ACK(self, connection, message):
         """
-        Handles server response for a group join request.
+        Handles server response for a group joining request.
         """
         result = message["data"]["result"]
         if result == "success":
@@ -239,7 +239,7 @@ class CSProtocol:
     def MEDIA_OFFER(self, connection, chat_id, transfer_id, filepath, chat_type, sender_port):
         """
         Sends a media transfer offer to another client via the server.
-        """
+        """    
         file_path = Path(filepath)
         filename = file_path.name
         filesize = file_path.stat().st_size
@@ -317,6 +317,7 @@ class CSProtocol:
         """
         Processes an incoming chat message and stores it locally.
         """
+        #print("Ekse, you have a new message coming through")
         data = message.get("data", {})
         from_user = data.get("from")
         chat_id = data.get("chat_id")
