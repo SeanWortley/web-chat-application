@@ -11,6 +11,8 @@ from ..ui import GUI, Terminal
 
 
 class Client:
+    """Client application coordinator for transport, protocol, storage, and UI."""
+
     def __init__(self, host, port, interface):
         """
         Initializes a client instance with server connection and UI interface.

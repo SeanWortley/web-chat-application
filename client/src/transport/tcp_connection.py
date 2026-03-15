@@ -5,6 +5,8 @@ import socket
 import traceback
 
 class TCPConnection:
+    """Wraps a TCP socket for framed JSON send/receive handling."""
+
     def __init__(self, socket, client):
         """
         Initializes a TCP connection wrapper for the client.

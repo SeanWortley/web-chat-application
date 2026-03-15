@@ -5,6 +5,8 @@ import os
 import time
 
 class UDPConnection:
+    """Manages UDP socket lifecycle for peer-to-peer transfers."""
+
     def __init__(self, client):
         """
         Initializes a UDP connection for P2P transfers.

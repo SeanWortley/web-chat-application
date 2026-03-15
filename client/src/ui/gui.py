@@ -6,6 +6,8 @@ from hashlib import sha256
 import queue
 
 class GUI:
+    """Tkinter-based graphical interface for interacting with the chat client."""
+
     def __init__(self):
         """
         Initializes the GUI application, main window, state variables,
@@ -75,8 +77,22 @@ class GUI:
             text (str): Text to display.
         """
         if hasattr(self, 'output_area') and self.output_area.winfo_exists():
-            self.output_area.insert(tk.END, text + "\n")
-            self.output_area.see(tk.END)
+            self._append_text_widget(self.output_area, text)
+
+    def _append_text_widget(self, widget, text):
+        """
+        Appends text to a read-only text widget.
+
+        Args:
+            widget: Tkinter text-like widget.
+            text (str): Text to append.
+        """
+        if not widget or not widget.winfo_exists():
+            return
+        widget.configure(state=tk.NORMAL)
+        widget.insert(tk.END, text + "\n")
+        widget.see(tk.END)
+        widget.configure(state=tk.DISABLED)
     
     def show_login_screen(self):
         """
@@ -89,7 +105,7 @@ class GUI:
         frame = tk.Frame(self.root, padx=30, pady=30)
         frame.pack(expand=True)
         
-        tk.Label(frame, text="Welcome to your Chat App. What are we chatting about today?", font=("Helvetica", 16)).pack(pady=10)
+        tk.Label(frame, text="Welcome To Our Web Chat Application", font=("Helvetica", 16)).pack(pady=10)
         
         tk.Label(frame, text="Username:").pack()
         self.login_username = tk.Entry(frame, width=30)
@@ -136,7 +152,7 @@ class GUI:
             tk.Button(menu_frame, text=text, command=command, width=20, pady=5).pack(pady=2)
         
         # This will be the display box that shows incoming messages. It will be updated by the process_queue method whenever a new message arrives or when the user receives a notification about unread messages.
-        self.output_area = scrolledtext.ScrolledText(self.root, width=40, height=25, state='normal')
+        self.output_area = scrolledtext.ScrolledText(self.root, width=40, height=25, state='disabled')
         self.output_area.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=10, pady=10)
     
     def login(self):
@@ -265,8 +281,10 @@ class GUI:
 
         logs = self.database.get_chat_history(chat_id, "private")
 
+        chat_display.configure(state=tk.NORMAL)
         chat_display.delete("1.0", tk.END)
         if not logs:
+            chat_display.configure(state=tk.DISABLED)
             return
 
         for message in logs:
@@ -276,6 +294,7 @@ class GUI:
             chat_display.insert(tk.END, f"{sender}: {msg_text}\n")
 
         chat_display.see(tk.END)
+        chat_display.configure(state=tk.DISABLED)
 
     def load_group_logs(self, group_id):
         """
@@ -311,8 +330,10 @@ class GUI:
 
         logs = self.database.get_chat_history(group_id, "group")
 
+        chat_display.configure(state=tk.NORMAL)
         chat_display.delete("1.0", tk.END)
         if not logs:
+            chat_display.configure(state=tk.DISABLED)
             return
 
         for message in logs:
@@ -322,6 +343,7 @@ class GUI:
             chat_display.insert(tk.END, f"{sender}: {msg_text}\n")
 
         chat_display.see(tk.END)
+        chat_display.configure(state=tk.DISABLED)
     
     def start_group_chat(self):
         """
@@ -363,7 +385,7 @@ class GUI:
         self.current_chat = chat_id
 
         # This where the messags will actually be displayed in the chat window.
-        chat_display = scrolledtext.ScrolledText(window, width=60, height=20, state='normal')
+        chat_display = scrolledtext.ScrolledText(window, width=60, height=20, state='disabled')
         chat_display.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
         
         """        # This us where any unread messages for this chat will be displayed.
@@ -388,6 +410,7 @@ class GUI:
         send_btn.pack(side=tk.RIGHT, padx=5)
 
         def transfer_file():
+            """Prompts for a file path and sends a MEDIA_OFFER for this chat."""
             if not self.on_user_input:
                 messagebox.showerror("Error", "Not connected")
                 return
@@ -424,6 +447,7 @@ class GUI:
         
         # When the user closes the chat window, we romove it from the chat_windows dictionary.
         def on_close():
+            """Cleans chat window state and closes the associated Tk window."""
             if chat_id in self.chat_windows:
                 del self.chat_windows[chat_id]
             if self.current_chat == chat_id:
@@ -452,8 +476,7 @@ class GUI:
         self.current_chat = chat_id
     
     # Displays the sent message immediately in the chat window for the user to see.
-        display.insert(tk.END, f"You: {text}\n")
-        display.see(tk.END)
+        self._append_text_widget(display, f"You: {text}")
         entry.delete(0, tk.END)
     
     # Sends the message to the server using the on_user_input callback.
@@ -552,16 +575,14 @@ class GUI:
         # Find the ScrolledText widget in the window
             for child in window.winfo_children():
                 if isinstance(child, scrolledtext.ScrolledText):
-                    child.insert(tk.END, f"{from_user}: {payload}\n")
-                    child.see(tk.END)
+                    self._append_text_widget(child, f"{from_user}: {payload}")
                     return
         # Also try to find it in nested frames
             for child in window.winfo_children():
                 if isinstance(child, tk.Frame):
                     for grandchild in child.winfo_children():
                         if isinstance(grandchild, scrolledtext.ScrolledText):
-                            grandchild.insert(tk.END, f"{from_user}: {payload}\n")
-                            grandchild.see(tk.END)
+                            self._append_text_widget(grandchild, f"{from_user}: {payload}")
                             return
     
         # Otherwise store as unread
@@ -575,11 +596,10 @@ class GUI:
     
     # Show notification in main window
         if hasattr(self, 'output_area'):
-            notification = f"\n New message from {from_user}"
+            notification = f"New message from {from_user}"
             if chat_type == "group":
-                notification = f"\n New message in {chat_id} from {from_user}"
-            self.output_area.insert(tk.END, notification + "\n")
-            self.output_area.see(tk.END)
+                notification = f"New message in {chat_id} from {from_user}"
+            self._display_text(notification)
     
     def process_unsent_batch(self, groups):
         """
@@ -723,6 +743,7 @@ class GUI:
         filesize = data.get('filesize')
 
         def show_offer():
+            """Shows an accept/reject dialog and responds to a pending file offer."""
             accepted = messagebox.askyesno(
                 "Incoming File Transfer",
                 f"{sender} wants to send you:\n\n"

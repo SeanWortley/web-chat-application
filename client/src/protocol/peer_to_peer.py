@@ -5,6 +5,7 @@ from pathlib import Path
 
 
 class P2PProtocol:
+    """Implements peer-to-peer file transfer behavior over UDP."""
 
     DATA = 0
     END = 1

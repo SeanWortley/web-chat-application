@@ -10,9 +10,16 @@ Arguments have a specified type to prevent bad DB interactions.
 """
 
 class Database:
+    """SQLite-backed local storage for client chat history."""
     
 
     def __init__(self, username):
+        """
+        Creates a user-scoped local database and initializes tables.
+
+        Args:
+            username (str): Logged-in username used to name the DB file.
+        """
         runtime_db_dir = Path(__file__).resolve().parents[2] / "runtime" / "db"
         runtime_db_dir.mkdir(parents=True, exist_ok=True)
         self.DB_PATH = str(runtime_db_dir / f"{username}.db")
@@ -20,6 +27,7 @@ class Database:
         self.initialise()
 
     def initialise(self):
+        """Creates required chat tables if they do not already exist."""
         connection = self.get_connection()
         connection.executescript("""
             CREATE TABLE IF NOT EXISTS private_chats (
@@ -53,6 +61,7 @@ class Database:
         connection.commit()
 
     def get_connection(self):
+        """Returns a thread-local SQLite connection configured for row access."""
         if not hasattr(self.local, "connection"):
             self.local.connection = sqlite3.connect(self.DB_PATH)
             self.local.connection.row_factory = sqlite3.Row
@@ -60,6 +69,16 @@ class Database:
         return self.local.connection
     
     def store_private_message(self, message, incoming = True):
+        """
+        Persists a private message and ensures its chat record exists.
+
+        Args:
+            message (dict): Message envelope containing payload data.
+            incoming (bool): True for inbound messages, False for outbound.
+
+        Returns:
+            bool: True if write succeeded, otherwise False.
+        """
         data = message.get("data")
         msg_id = data.get("msg_id")
         if incoming:
@@ -87,6 +106,16 @@ class Database:
             return False
     
     def store_group_message(self, message, incoming = True):
+        """
+        Persists a group message and ensures its group chat record exists.
+
+        Args:
+            message (dict): Message envelope containing payload data.
+            incoming (bool): Included for API symmetry with private messages.
+
+        Returns:
+            bool: True if write succeeded, otherwise False.
+        """
         data = message.get("data")
         msg_id = data.get("msg_id")
         chat_id = data.get("chat_id")
@@ -112,6 +141,16 @@ class Database:
 
     # THIS IS FOR INTERFACE IMPLEMENTATION
     def get_chat_history(self, chat_id, chat_type):
+        """
+        Retrieves ordered message history for a private or group chat.
+
+        Args:
+            chat_id (str): Username (private) or group name (group).
+            chat_type (str): Either "private" or "group".
+
+        Returns:
+            list[dict]: Chronologically ordered message rows.
+        """
         if chat_type == "private":
             command = """
                 SELECT * FROM private_messages
@@ -130,29 +169,13 @@ class Database:
         chat_history = self.get_connection().execute(command, (chat_id,)).fetchall()
         return [dict(row) for row in chat_history]
 
-    def get_private_chat_history(self, chat_id):
-        return self.get_chat_history(chat_id, "private")
-    
-    def get_group_chat_history(self, chat_id):
-        return self.get_chat_history(chat_id, "group")
-    
-    # Call this method when developing the gui
-    # Returns a list of dictionaries, each representing a chat
-    # Example dictionary in the list:
-    # {"chat_id": "sande", "chat_type": "private"}
-    # {"chat_id": "team", "chat_type": "group"}
-    def get_chats(self):
-
-        command = ("""
-            SELECT chat_id, 'private' as chat_type FROM private_chats
-            UNION
-            SELECT chat_id, 'group' as chat_type FROM group_chats
-        """)
-
-        result = self.get_connection().execute(command).fetchall()
-        return [dict(row) for row in result]
-    
     def delete_private_chat_logs(self, user_id):
+        """
+        Deletes all locally stored messages for a private chat.
+
+        Args:
+            user_id (str): Username of the private chat peer.
+        """
         self.get_connection().execute(
             "DELETE FROM private_messages WHERE chat_id = ?", (user_id,)
         )
@@ -164,6 +187,12 @@ class Database:
         
 
     def delete_group_chat_logs(self, group_name):
+        """
+        Deletes all locally stored messages for a group chat.
+
+        Args:
+            group_name (str): Name of the group chat.
+        """
         self.get_connection().execute(
             "DELETE FROM group_messages WHERE chat_id = ?", (group_name,)
         )
