@@ -159,6 +159,7 @@ class Protocol:
         from_user = connection.loggedInAs
 
         context = {
+            "source_conn": connection,
             "from_user": from_user,
             "chat_id": chat_id,
             "chat_type": data.get("chat_type"),
@@ -232,6 +233,14 @@ class Protocol:
         target_conn = ctx["target_conn"]
 
         if message_name == "MEDIA_OFFER":
+            if ctx["chat_type"] == "private" and not target_conn:
+                self.MSG_NAK(
+                    ctx["source_conn"],
+                    ctx["chat_id"],
+                    "Recipient is offline"
+                )
+                return
+
             self.add_offer(
                 transfer_id=ctx["transfer_id"],
                 sender=ctx["from_user"],
@@ -397,11 +406,14 @@ class Protocol:
             self.server.log(f"MEDIA_OFFER skipped: sender connection not found for '{from_user}'")
             return
         md_offer_sender_ip = media_offer_sender_conn.socket.getpeername()[0]
+
+        routed_chat_id = from_user if chat_type == "private" else chat_id
+
         recipient_conn.sendJson({
             "message_name": "MEDIA_OFFER",
             "data": {
                 "from": from_user,
-                "chat_id": chat_id,
+                "chat_id": routed_chat_id,
                 "chat_type": chat_type,
                 "transfer_id": transfer_id,
                 "filename": filename,
