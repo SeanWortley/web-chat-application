@@ -46,22 +46,37 @@ class Terminal:
             if self.running: # This is to stop the "Invalid command" prompt after pressing enter to exit :)
 
                 if text == "1": #Private chat
+                    if not self.logged_in:
+                        print("Please log in first.")
+                        continue
                     self.start_private_chat()
                     self.current_chat = None
 
                 elif text == "2": #Group chat
+                    if not self.logged_in:
+                        print("Please log in first.")
+                        continue
                     self.start_group_chat()
                     self.current_chat = None
 
                 elif text == "3":
+                    if not self.logged_in:
+                        print("Please log in first.")
+                        continue
                     self.wait_event.clear()
                     self.view_groups()
                     self.wait_event.wait()
                 elif text == "4":
+                    if not self.logged_in:
+                        print("Please log in first.")
+                        continue
                     self.wait_event.clear()
                     self.create_group()
                     self.wait_event.wait()
                 elif text == "5":
+                    if not self.logged_in:
+                        print("Please log in first.")
+                        continue
                     self.wait_event.clear()
                     self.join_group()
                     self.wait_event.wait()
@@ -256,6 +271,9 @@ class Terminal:
 
     def start_private_chat(self):
         """Starts an interactive private chat session in the terminal."""
+        if not self.logged_in:
+            print("Please log in first.")
+            return
         recipient = input("Who would you like to chat with?\n> ").strip()
         if not recipient:
             print("Please enter a valid username.")
@@ -381,6 +399,9 @@ class Terminal:
 
     def start_group_chat(self):
         """Starts an interactive group chat session in the terminal."""
+        if not self.logged_in:
+            print("Please log in first.")
+            return
         group = input("Which chat room would you like to enter?\n> ").strip()
         if not group:
             print("Please enter a valid group name.")
