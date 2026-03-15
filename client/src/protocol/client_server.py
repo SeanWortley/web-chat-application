@@ -3,6 +3,8 @@ import uuid
 from pathlib import Path
 
 class CSProtocol:
+    """Handles client-side message exchange with the central server."""
+
     def __init__(self, client):
         """
         Initializes the client-server protocol handler.

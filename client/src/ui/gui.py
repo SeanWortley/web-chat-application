@@ -6,6 +6,8 @@ from hashlib import sha256
 import queue
 
 class GUI:
+    """Tkinter-based graphical interface for interacting with the chat client."""
+
     def __init__(self):
         """
         Initializes the GUI application, main window, state variables,
@@ -408,6 +410,7 @@ class GUI:
         send_btn.pack(side=tk.RIGHT, padx=5)
 
         def transfer_file():
+            """Prompts for a file path and sends a MEDIA_OFFER for this chat."""
             if not self.on_user_input:
                 messagebox.showerror("Error", "Not connected")
                 return
@@ -444,6 +447,7 @@ class GUI:
         
         # When the user closes the chat window, we romove it from the chat_windows dictionary.
         def on_close():
+            """Cleans chat window state and closes the associated Tk window."""
             if chat_id in self.chat_windows:
                 del self.chat_windows[chat_id]
             if self.current_chat == chat_id:
@@ -739,6 +743,7 @@ class GUI:
         filesize = data.get('filesize')
 
         def show_offer():
+            """Shows an accept/reject dialog and responds to a pending file offer."""
             accepted = messagebox.askyesno(
                 "Incoming File Transfer",
                 f"{sender} wants to send you:\n\n"

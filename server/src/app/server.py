@@ -9,6 +9,8 @@ from ..storage.database import Database
 
 
 class Server:
+    """TCP chat server coordinating connections, protocol handling, and persistence."""
+
     def __init__(self, host, port, verbose):
         """
     Initializes the server instance and prepares all required components.

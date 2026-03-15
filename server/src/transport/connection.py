@@ -3,6 +3,8 @@ from threading import Thread
 
 
 class Connection:
+    """Represents one connected server-side client session over TCP."""
+
     def __init__(self, socket, server):
         """
         Initializes a client connection.
