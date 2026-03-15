@@ -507,9 +507,6 @@ class Terminal:
         sys.exit()
 
     def create_group(self):
-        """
-        Sends a request to create a new group.
-        """
         group_name = input("Enter your desired group name:\n> ")
         
         # Pass message to client.py
@@ -521,9 +518,6 @@ class Terminal:
         })
     
     def join_group(self):
-        """
-        Sends a request to create a new group.
-        """
         group_name = input("Enter the name of the group you'd like to join:\n> ")
         
         # Pass message to client.py
@@ -535,28 +529,15 @@ class Terminal:
         })
 
     def view_groups(self):
-        """
-        Requests the list of available groups from the server.
-        """
         self.on_user_input({
             "message_name": "GROUP_LIST"
         })
 
-    def display(self, text):
-        """
-        Displays text output in the terminal interface.
-        """ # Will have to be adapted once GUI is added.
+    def display(self, text): # Will have to be adapted once GUI is added.
         print(text)
 
     def send_media_offer(self, chat_id, filepath, chat_type):
-        """
-        Sends a file transfer offer to another user or group.
 
-        Args:
-            chat_id (str): Target user or group.
-            filepath (str): Path to the file.
-            chat_type (str): Chat type ('private' or 'group').
-        """
         filepath = filepath.strip().strip('"\'') 
         if not os.path.exists(filepath):
             print(f"File not found: {filepath}")
@@ -623,9 +604,6 @@ class Terminal:
 
 
     def handle_incoming_offer(self, message):
-        """
-        Processes an incoming file transfer offer.
-        """
         data = message.get("data", {})
         transfer_id = data.get("transfer_id")
         if not transfer_id:
@@ -653,47 +631,23 @@ class Terminal:
         os.system('cls' if os.name == 'nt' else 'clear')
 
     def print_current(self):
-        """
-        Displays the current active chat session.
-        """
         print(f"Chatting with {self.current_chat}")
 
     def process_self_message(self):
-        """
-        Handles attempts to send a message to the user themself.
-        """
         print("\nYou can't message yourself! Please exit the chat.\n>>", end="")
 
     def process_incorrect_recipient(self):
-        """
-        Handles attempts to message a non-existent user.
-        """
         print("\nThis user does not exist! Please exit the chat.\n>>", end="")
 
     def process_incorrect_group(self):
-        """
-        Handles attempts to access a non-existent group.
-        """
         print("\nThis group not exist! Please exit the chat.\n>>", end="")
 
     def process_not_group_member(self):
-        """
-        Handles attempts to message a group the user is not a member of.
-        """
         print("\nYou are not a member of this group! Please exit the chat.\n>>", end="")
     
     def process_shutdown(self):
-        """
-        Handles server shutdown notifications.
-        """
         print("\nServer has shut down. Press Enter to exit.")
         self.quit()
 
     def on_file_received(self, filepath):
-        """
-        Called when a file transfer completes successfully.
-
-        Args:
-            filepath (str): Path to the received file.
-        """
         print(f"[UDP] Transfer complete -> {filepath}")
