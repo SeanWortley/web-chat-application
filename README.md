@@ -1,16 +1,21 @@
-Run from project root
+#Run from project root
 
-Server:
+##Server:
+###Default Localhost:
+python3 server/main.py
+
+###Specify ip and port
 python3 server/main.py --host {hostip} --port {hostport}
 
-Server clean runtime DB:
+###Server clean runtime DB (Does not start server):
 python3 server/main.py --clean
 
-Client (GUI):
-python3 client/main.py --host {hostip} --port {hostport}
+##Client:
+###Default Localhost and GUI:
+python3 client/main.py
 
-Client (Terminal):
+###Specify ip, port and/or terminal:
 python3 client/main.py --host {hostip} --port {hostport} --terminal
 
-Client clean runtime DB and any temp .bin files (left behind if media transfer is cut midway):
+###Client clean runtime DB and any temp .bin files (left behind if media transfer is cut midway, does not start client):
 python3 client/main.py --clean
